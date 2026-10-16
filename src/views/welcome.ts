@@ -29,7 +29,6 @@ export function welcomeView(ctx: AppContext): View {
     </div>
   `);
 
-  const content = $('[data-content]', root)!;
   const cleanups: Array<() => void> = [];
   const splitters: TextSplitter[] = [];
   const wide = () => innerWidth > 860;
@@ -45,8 +44,6 @@ export function welcomeView(ctx: AppContext): View {
   const frame = (duration: number) => {
     const scene = ctx.cosmos.scene;
     ctx.cosmos.setShift(side() ? 0.16 : 0, side() ? 0.16 : 0.04, duration);
-    ctx.cosmos.labelAvoid = content.getBoundingClientRect();
-    ctx.cosmos.labelCeiling = 76;
     if (scene) animate(scene.user, { zoom: wide() ? 1.12 : 1, duration, ease: 'inOut(3)' });
   };
 
@@ -134,8 +131,6 @@ export function welcomeView(ctx: AppContext): View {
     destroy() {
       cleanups.forEach((c) => c());
       splitters.forEach((s) => s.revert());
-      ctx.cosmos.labelAvoid = null;
-      ctx.cosmos.labelCeiling = 0;
       const scene = ctx.cosmos.scene;
       if (scene) animate(scene.user, { zoom: 1, duration: 1200, ease: 'inOut(3)' });
     },

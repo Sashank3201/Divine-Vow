@@ -86,18 +86,22 @@ flat in float vType;
 uniform float uDust;
 out vec4 outColor;
 
+// NaN becomes black and ±Inf is clamped, so one bad value can never spread
+// through blur, bloom and glass into coloured blotches.
+vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
+
 void main() {
   vec2 c = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(c, c);
   if (r2 > 1.0) discard;
   if (uDust > 0.5) {
     float f = exp(-r2 * 3.0) * (1.0 - r2);
-    outColor = vec4(min(vColor * f, vec3(0.92)), 1.0);
+    outColor = vec4(min(safe(vColor * f), vec3(0.92)), 1.0);
     return;
   }
   float soft = (vType > 1.5 && vType < 4.5) || vType > 7.5 ? 1.0 : 0.0;
   float f = soft > 0.5 ? exp(-r2 * 3.2) * (1.0 - r2) : exp(-r2 * 7.0) + 0.06 * exp(-r2 * 1.5) * (1.0 - r2);
-  outColor = vec4(vColor * f, 1.0);
+  outColor = vec4(safe(vColor * f), 1.0);
 }
 `;
 
@@ -121,6 +125,10 @@ uniform float uTime;
 out vec4 outColor;
 
 uniform highp sampler3D uNoise;
+
+// NaN becomes black and ±Inf is clamped, so one bad value can never spread
+// through blur, bloom and glass into coloured blotches.
+vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
 
 // Value noise from a pre-smoothed, tiling 64³ texture: hardware trilinear
 // filtering is fast on every GPU and immune to driver precision quirks.
@@ -158,9 +166,11 @@ void main() {
   // Dark dust lanes inside the clouds give them texture.
   col *= 0.35 + smoothstep(0.4, 0.62, m) * 0.9;
   // Faint diffuse band across the sky for depth.
-  float band = exp(-pow(dot(dir, normalize(vec3(0.25, 1.0, -0.35))) * 3.0, 2.0));
+  // x * x, not pow(x, 2.0): pow() of a negative base is undefined in GLSL.
+  float bd = dot(dir, normalize(vec3(0.25, 1.0, -0.35))) * 3.0;
+  float band = exp(-bd * bd);
   col += vec3(0.03, 0.028, 0.05) * band * (0.5 + 0.5 * n);
-  outColor = vec4(col * uIntensity, 1.0);
+  outColor = vec4(safe(col * uIntensity), 1.0);
 }
 `;
 
@@ -175,6 +185,10 @@ out vec4 outColor;
 
 float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 vec3 karis(vec3 c) { return c / (1.0 + luma(c)); }
+// NaN becomes black and ±Inf is clamped, so one bad value can never spread
+// through blur, bloom and glass into coloured blotches.
+vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
+
 
 void main() {
   vec2 t = uTexel;
@@ -208,7 +222,7 @@ void main() {
   } else {
     col = e * 0.125 + (a + c + g + i) * 0.03125 + (b + d + f + h) * 0.0625 + (j + k + l + m) * 0.125;
   }
-  outColor = vec4(max(col, vec3(0.0)), 1.0);
+  outColor = vec4(safe(col), 1.0);
 }
 `;
 
@@ -221,6 +235,9 @@ uniform vec2 uTexel;
 uniform float uRadius;
 uniform float uWeight;
 out vec4 outColor;
+// NaN becomes black and ±Inf is clamped, so one bad value can never spread
+// through blur, bloom and glass into coloured blotches.
+vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
 void main() {
   vec2 t = uTexel * uRadius;
   vec3 col = texture(uSrc, vUv).rgb * 4.0;
@@ -228,7 +245,7 @@ void main() {
         + texture(uSrc, vUv + vec2(t.x, 0.0)).rgb + texture(uSrc, vUv - vec2(t.x, 0.0)).rgb) * 2.0;
   col += texture(uSrc, vUv + t).rgb + texture(uSrc, vUv - t).rgb
        + texture(uSrc, vUv + vec2(t.x, -t.y)).rgb + texture(uSrc, vUv + vec2(-t.x, t.y)).rgb;
-  outColor = vec4(col * (uWeight / 16.0), 1.0);
+  outColor = vec4(safe(col * (uWeight / 16.0)), 1.0);
 }
 `;
 
@@ -294,6 +311,10 @@ vec3 flashAt(vec2 uv) {
   return uFlash * (vec3(1.0, 0.9, 0.78) * exp(-fl * 70.0) * 1.6 + vec3(1.0, 0.85, 0.7) * exp(-fl * 16.0) * 0.35 + vec3(0.6, 0.72, 1.0) * exp(-fl * 3.0) * 0.08);
 }
 
+// NaN becomes black and ±Inf is clamped, so one bad value can never spread
+// through blur, bloom and glass into coloured blotches.
+vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
+
 vec3 grade(vec3 hdr) {
   vec3 c = aces(hdr * uExposure);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -302,7 +323,7 @@ vec3 grade(vec3 hdr) {
 }
 
 vec3 hdrAt(vec2 uv) {
-  return texture(uScene, uv).rgb + texture(uBloom, uv).rgb * uBloomStrength + texture(uNebula, uv).rgb + flashAt(uv);
+  return safe(texture(uScene, uv).rgb + texture(uBloom, uv).rgb * uBloomStrength + texture(uNebula, uv).rgb + flashAt(uv));
 }
 
 vec3 frostAt(vec2 uv) {
@@ -310,7 +331,7 @@ vec3 frostAt(vec2 uv) {
   vec3 f = texture(uFrost, uv).rgb * 0.4
     + (texture(uFrost, uv + vec2(t.x, t.y)).rgb + texture(uFrost, uv + vec2(-t.x, t.y)).rgb
      + texture(uFrost, uv + vec2(t.x, -t.y)).rgb + texture(uFrost, uv + vec2(-t.x, -t.y)).rgb) * 0.15;
-  return f + texture(uBloom, uv).rgb * uBloomStrength * 0.9 + texture(uNebula, uv).rgb + flashAt(uv);
+  return safe(f + texture(uBloom, uv).rgb * uBloomStrength * 0.9 + texture(uNebula, uv).rgb + flashAt(uv));
 }
 
 float sdBox(vec2 p, vec2 h, float r, out vec2 n) {
@@ -341,7 +362,7 @@ void main() {
     hdr += s * vec3(0.55, 0.72, 1.0) * uStreak * 0.012;
   }
   hdr += texture(uNebula, uv).rgb + flashAt(uv);
-  vec3 col = grade(hdr);
+  vec3 col = grade(safe(hdr));
 
   // ── Liquid glass ──────────────────────────────────────────────────────
   vec2 px = gl_FragCoord.xy;
@@ -410,7 +431,8 @@ void main() {
     // Specular: a crisp rim lit from the light direction, a softer one opposite.
     float lit = max(dot(hitN, uLight), 0.0);
     float back = max(dot(hitN, -uLight), 0.0);
-    float rim = exp(-pow((depth - 0.9 * uPx) / (1.15 * uPx), 2.0));
+    float rz = (depth - 0.9 * uPx) / (1.15 * uPx);
+    float rim = exp(-rz * rz);
     g += vec3(rim * (0.18 + 0.7 * lit + 0.28 * back));
     g += vec3(exp(-depth / (12.0 * uPx)) * (lit * 0.09 + back * 0.03));
     // Faint sheen falling from the top edge.
@@ -469,6 +491,6 @@ void main() {
   }
 
   col += (hash12(gl_FragCoord.xy + fract(uTime) * 917.0) - 0.5) * uGrain;
-  outColor = vec4(col, 1.0);
+  outColor = vec4(mix(clamp(col, 0.0, 1.0), vec3(0.0), isnan(col)), 1.0);
 }
 `;
