@@ -1,7 +1,7 @@
 /**
  * The collision, directed. One Anime.js timeline drives every field of the
  * scene director — cosmic time, the camera, exposure, bloom, flashes and
- * shakes — and fires caption/chapter callbacks in sync with the physics.
+ * shakes — and marks each chapter of the collision.
  *
  * Cosmic time follows a custom easing: a monotone cubic spline through
  * hand-placed beats, so the simulation glides into slow motion at each
@@ -10,11 +10,6 @@
 
 import { createTimeline, type EasingFunction, type Timeline } from 'animejs';
 import type { Director } from '../galaxy/scene';
-
-export interface Caption {
-  at: number;
-  text: string | null;
-}
 
 export interface Chapter {
   at: number;
@@ -27,18 +22,6 @@ export const CHAPTERS: Chapter[] = [
   { at: 16500, label: 'Tidal dance' },
   { at: 29500, label: 'Return' },
   { at: 36500, label: 'Rebirth' },
-];
-
-export const CAPTIONS: Caption[] = [
-  { at: 3800, text: 'Andromeda is approaching at 110 km/s.' },
-  { at: 8600, text: 'In about 4.5 billion years, they meet.' },
-  { at: 12300, text: 'First contact.' },
-  { at: 17500, text: 'Tidal tails stretch 100,000 light-years.' },
-  { at: 24800, text: 'Gravity pulls them back.' },
-  { at: 31400, text: 'Second pass.' },
-  { at: 35200, text: 'Merger.' },
-  { at: 40500, text: 'A new galaxy forms: Milkomeda.' },
-  { at: 47000, text: null },
 ];
 
 export const CINEMATIC_DURATION = 48000;
@@ -108,9 +91,7 @@ function track(points: Point[]) {
 }
 
 export interface CinematicHandlers {
-  caption?(text: string | null, index: number): void;
   chapter?(index: number): void;
-  impact?(strength: number): void;
   progress?(p: number): void;
   complete?(): void;
 }
@@ -291,15 +272,6 @@ export function createCinematic(director: Director, ev: CinematicEvents, h: Cine
     tl.label(c.label, c.at);
     tl.call(() => h.chapter?.(i), c.at);
   });
-  CAPTIONS.forEach((c, i) => {
-    if (c.at <= D) tl.call(() => h.caption?.(c.text, i), c.at);
-  });
-  tl.call(() => h.impact?.(0.7), 12450);
-  tl.call(() => h.impact?.(0.45), 32300);
-  tl.call(() => h.impact?.(1), 35200);
 
   return tl;
 }
-
-/** Captions scheduled after the timeline ends (it keeps the remnant alive). */
-export const LATE_CAPTIONS = CAPTIONS.filter((c) => c.at > CINEMATIC_DURATION);

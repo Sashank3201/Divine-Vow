@@ -24,7 +24,6 @@ import { icons } from '../ui/icons';
 import { $, $$, esc, relativeDay } from '../ui/dom';
 import { openModal, toast } from '../ui/overlay';
 import { relapseFlow } from '../ui/relapse';
-import { sound } from '../ui/sound';
 import { createSheet } from './sheet';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -232,7 +231,6 @@ export function dashboardView(ctx: AppContext): View {
         s.checkins = s.checkins.filter((c) => c.date !== dateKey());
         s.checkins.push({ date: dateKey(), mood, strength: mood, at: Date.now() });
       });
-      sound.chime(mood);
       const card = $('[data-checkin]', dash)!;
       card.innerHTML = checkinMarkup();
       animate(card.children, { opacity: { from: 0, to: 1 }, y: { from: 8, to: 0 }, delay: stagger(50), duration: 400, ease: 'out(3)' });

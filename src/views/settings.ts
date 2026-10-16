@@ -6,7 +6,6 @@ import { icons } from '../ui/icons';
 import { $, $$, esc } from '../ui/dom';
 import { confirmDialog, openModal, toast } from '../ui/overlay';
 import { relapseFlow } from '../ui/relapse';
-import { sound } from '../ui/sound';
 import { canInstall, isIOS, isStandalone, promptInstall } from '../app/pwa';
 import { createSheet } from './sheet';
 import { pinPad } from './lock';
@@ -59,7 +58,6 @@ export function settingsView(ctx: AppContext): View {
 
       <p class="settings__label">Experience</p>
       <div class="group group--flush">
-        ${row('Sound', '', sw('sound', sound.enabled, 'Sound'))}
         ${row('Haptics', 'Phones only.', sw('haptics', st.haptics, 'Haptics'))}
         <div class="row row--stack"><span class="row__body"><span class="row__title">Motion</span></span>${seg<MotionPref>('motion', st.motion, [
           ['auto', 'Auto'],
@@ -192,8 +190,7 @@ export function settingsView(ctx: AppContext): View {
     if (!b) return;
     if (b.dataset.switch) {
       const key = b.dataset.switch;
-      if (key === 'sound') b.setAttribute('aria-checked', String(sound.toggle()));
-      else if (key === 'haptics') {
+      if (key === 'haptics') {
         store.update((s) => {
           s.settings.haptics = !s.settings.haptics;
         });

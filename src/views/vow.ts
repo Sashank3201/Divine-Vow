@@ -10,7 +10,6 @@ import { icons } from '../ui/icons';
 import { $, $$, esc, vibrate } from '../ui/dom';
 import { toast } from '../ui/overlay';
 import { burst } from '../ui/celebrate';
-import { sound } from '../ui/sound';
 import { createSheet } from './sheet';
 
 const CODENAMES = ['The Shadow', 'The Pull', 'The Old Me', 'The Habit', 'It'];
@@ -201,8 +200,6 @@ export function vowView(ctx: AppContext): View {
     const r = $('[data-seal]', stage)!.getBoundingClientRect();
     burst(r.left + r.width / 2, r.top + r.height / 2, 48, 220);
     ctx.cosmos.flash(0.7);
-    sound.chime(2);
-    window.setTimeout(() => sound.chime(5), 200);
     vibrate([40, 40, 120]);
     $('[data-seal-hint]', stage)!.textContent = 'Sealed.';
     animate($('.seal__core', stage)!, { scale: [{ to: 1.12, duration: 160 }, { to: 1, duration: 500, ease: 'outElastic(1, .5)' }] });
@@ -227,7 +224,6 @@ export function vowView(ctx: AppContext): View {
         const q = Math.floor(a.progress * 4);
         if (q > lastQuarter && !a.reversed) {
           vibrate(15);
-          sound.chime(q);
         }
         lastQuarter = q;
       },

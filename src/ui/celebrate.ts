@@ -5,7 +5,6 @@ import type { AppContext } from '../app/types';
 import type { Milestone } from '../core/journey';
 import { esc, vibrate } from './dom';
 import { openModal } from './overlay';
-import { sound } from './sound';
 
 const COLORS = ['#ffffff', '#dff3ff', '#8fd3ff'];
 
@@ -49,8 +48,6 @@ export function celebrate(m: Milestone, ctx: AppContext): void {
   );
   const star = modal.body.querySelector<SVGElement>('.celebrate__star')!;
   animate(star, { scale: { from: 0, to: 1 }, rotate: { from: -120, to: 0 }, duration: 900, ease: 'outElastic(1, .6)' });
-  sound.chime(4);
-  window.setTimeout(() => sound.chime(6), 240);
   vibrate([30, 60, 30]);
   ctx.cosmos.flash(0.5);
   window.setTimeout(() => {

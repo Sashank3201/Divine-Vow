@@ -29,8 +29,6 @@ export const icons = {
   backspace: svg('<path d="M21 5H9l-6 7 6 7h12V5Z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/>'),
   play: svg('<path d="M7 4.5v15l12-7.5-12-7.5Z"/>'),
   replay: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
-  volume: svg('<path d="M11 5 6 9H3v6h3l5 4V5ZM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
-  mute: svg('<path d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/>'),
   lock: svg('<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>'),
   shield: svg('<path d="M12 3 4.5 6v6c0 4.5 3.2 8 7.5 9 4.3-1 7.5-4.5 7.5-9V6L12 3Z"/><path d="m9 12 2 2 4-4"/>'),
   download: svg('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),

@@ -9,7 +9,6 @@ import { $, $$, el, esc, vibrate } from '../ui/dom';
 import { openModal, toast } from '../ui/overlay';
 import { burst } from '../ui/celebrate';
 import { relapseFlow } from '../ui/relapse';
-import { sound } from '../ui/sound';
 import { breathePanel, groundPanel, movePanel, surfPanel, whyPanel, type Panel } from './sos/tools';
 import { starCatcher } from './sos/game';
 import { createSheet } from './sheet';
@@ -159,7 +158,6 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
       const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
       burst(r.left + r.width / 2, r.top + r.height / 2, 40, 200);
       ctx.cosmos.flash(0.6);
-      sound.chime(4);
       vibrate([30, 40, 80]);
       void m.close();
       const won = store.get().urges.filter((u) => u.outcome === 'won').length;
