@@ -25,6 +25,8 @@ export const icons = {
   check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
   arrowRight: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   arrowLeft: svg('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  chevron: svg('<path d="m9.5 6 6 6-6 6"/>'),
+  backspace: svg('<path d="M21 5H9l-6 7 6 7h12V5Z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/>'),
   play: svg('<path d="M7 4.5v15l12-7.5-12-7.5Z"/>'),
   replay: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
   volume: svg('<path d="M11 5 6 9H3v6h3l5 4V5ZM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
@@ -50,19 +52,3 @@ export const icons = {
 };
 
 export type IconName = keyof typeof icons;
-
-/** Brand mark: two orbits merging around a four-pointed star. */
-export const brandMark = `<svg class="brand__mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-  <defs>
-    <linearGradient id="bm-g" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffe9bf"/><stop offset="0.5" stop-color="#f4c97c"/><stop offset="1" stop-color="#b98443"/>
-    </linearGradient>
-    <radialGradient id="bm-r" cx="20" cy="20" r="9" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff7e3"/><stop offset="1" stop-color="#f4c97c" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <circle cx="20" cy="20" r="9" fill="url(#bm-r)" opacity="0.6"/>
-  <ellipse cx="20" cy="20" rx="17" ry="7" transform="rotate(-30 20 20)" stroke="url(#bm-g)" stroke-width="1.4" opacity="0.9"/>
-  <ellipse cx="20" cy="20" rx="17" ry="7" transform="rotate(30 20 20)" stroke="url(#bm-g)" stroke-width="1.4" opacity="0.9"/>
-  <path d="M20 11.5c.6 4.4 3.6 7.4 8 8-4.4.6-7.4 3.6-8 8-.6-4.4-3.6-7.4-8-8 4.4-.6 7.4-3.6 8-8Z" fill="url(#bm-g)"/>
-</svg>`;

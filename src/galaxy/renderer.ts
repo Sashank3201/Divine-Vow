@@ -11,6 +11,7 @@ import {
   PARTICLE_FS,
   PARTICLE_VS,
   UPSAMPLE_FS,
+  MAX_GLASS,
 } from './shaders';
 import type { Mat4, Vec3 } from './math';
 
@@ -51,6 +52,18 @@ export interface FrameUniforms {
   skyFade: number;
   youth: number;
   dust: number;
+  glass?: GlassFrame;
+  /** Canvas pixels per CSS pixel. */
+  pixelRatio?: number;
+}
+
+/** Liquid-glass panels for this frame, in canvas pixels (origin bottom-left). */
+export interface GlassFrame {
+  rects: Float32Array;
+  params: Float32Array;
+  count: number;
+  light: [number, number];
+  accent: [number, number, number];
 }
 
 export interface ParticleRanges {
@@ -81,6 +94,7 @@ export class GalaxyRenderer {
   private scene: Target | null = null;
   private nebulaTarget: Target | null = null;
   private mips: Target[] = [];
+  private frost: Target | null = null;
   private width = 1;
   private height = 1;
   private particleCount = 0;
@@ -126,6 +140,7 @@ export class GalaxyRenderer {
     this.composite = this.program(FULLSCREEN_VS, COMPOSITE_FS, [
       'uScene', 'uBloom', 'uNebula', 'uResolution', 'uExposure', 'uBloomStrength', 'uVignette', 'uGrain', 'uTime',
       'uFlash', 'uFlashPos', 'uSaturation', 'uAberration', 'uStreak', 'uStreakTex',
+      'uFrost', 'uFrostTexel', 'uGlassRect', 'uGlassParam', 'uGlassCount', 'uLight', 'uAccent', 'uPx',
     ]);
 
     this.posBuffer = gl.createBuffer()!;
@@ -288,7 +303,10 @@ export class GalaxyRenderer {
     this.deleteTarget(this.scene);
     this.deleteTarget(this.nebulaTarget);
     this.mips.forEach((m) => this.deleteTarget(m));
+    this.deleteTarget(this.frost);
     this.scene = this.createTarget(width, height);
+    // A clean blur of the scene for frosted glass (the bloom mips get accumulated into).
+    this.frost = this.createTarget(Math.max(1, width >> 3), Math.max(1, height >> 3));
     this.nebulaTarget = this.createTarget(Math.max(1, width >> 2), Math.max(1, height >> 2));
     this.mips = [];
     let w = width >> 1;
@@ -381,6 +399,15 @@ export class GalaxyRenderer {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       src = mip;
     });
+    const frostSrc = this.mips[1] ?? this.mips[0];
+    if (this.frost && frostSrc) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.frost.fbo);
+      gl.viewport(0, 0, this.frost.w, this.frost.h);
+      gl.bindTexture(gl.TEXTURE_2D, frostSrc.tex);
+      gl.uniform2f(d.u.uTexel!, 1 / frostSrc.w, 1 / frostSrc.h);
+      gl.uniform1f(d.u.uKaris!, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
 
     const u = this.up;
     gl.useProgram(u.prog);
@@ -429,6 +456,19 @@ export class GalaxyRenderer {
     gl.uniform1f(c.u.uSaturation!, f.saturation);
     gl.uniform1f(c.u.uAberration!, f.aberration);
     gl.uniform1f(c.u.uStreak!, f.streak);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.frost?.tex ?? this.scene.tex);
+    gl.uniform1i(c.u.uFrost!, 4);
+    gl.uniform2f(c.u.uFrostTexel!, 1 / (this.frost?.w ?? this.width), 1 / (this.frost?.h ?? this.height));
+    const g = f.glass;
+    gl.uniform1i(c.u.uGlassCount!, g ? Math.min(g.count, MAX_GLASS) : 0);
+    if (g && g.count > 0) {
+      gl.uniform4fv(c.u.uGlassRect!, g.rects);
+      gl.uniform4fv(c.u.uGlassParam!, g.params);
+      gl.uniform2f(c.u.uLight!, g.light[0], g.light[1]);
+      gl.uniform3f(c.u.uAccent!, g.accent[0], g.accent[1], g.accent[2]);
+    }
+    gl.uniform1f(c.u.uPx!, f.pixelRatio ?? 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(null);
@@ -438,8 +478,10 @@ export class GalaxyRenderer {
     const gl = this.gl;
     this.deleteTarget(this.scene);
     this.deleteTarget(this.nebulaTarget);
+    this.deleteTarget(this.frost);
     this.mips.forEach((m) => this.deleteTarget(m));
     this.scene = null;
+    this.frost = null;
     this.nebulaTarget = null;
     this.mips = [];
     [this.posBuffer, this.attrBuffer, this.skyPosBuffer, this.skyAttrBuffer].forEach((b) => gl.deleteBuffer(b));

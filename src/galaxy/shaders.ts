@@ -149,11 +149,12 @@ void main() {
   float clouds = smoothstep(0.5, 0.78, n);
   clouds *= clouds;
   float wisps = smoothstep(0.52, 0.72, m);
-  vec3 violet = vec3(0.15, 0.06, 0.3);
-  vec3 teal = vec3(0.02, 0.1, 0.17);
-  vec3 rose = vec3(0.26, 0.045, 0.13);
-  vec3 col = mix(teal, violet, smoothstep(0.4, 0.62, warp)) * clouds;
-  col += rose * wisps * clouds * 0.9;
+  // Neutral, cool interstellar haze: no purple, no pink.
+  vec3 deep = vec3(0.035, 0.055, 0.11);
+  vec3 teal = vec3(0.015, 0.06, 0.09);
+  vec3 grey = vec3(0.06, 0.065, 0.08);
+  vec3 col = mix(teal, deep, smoothstep(0.4, 0.62, warp)) * clouds;
+  col += grey * wisps * clouds * 0.6;
   // Dark dust lanes inside the clouds give them texture.
   col *= 0.35 + smoothstep(0.4, 0.62, m) * 0.9;
   // Faint diffuse band across the sky for depth.
@@ -231,13 +232,27 @@ void main() {
 }
 `;
 
+export const MAX_GLASS = 16;
+
+/**
+ * Final composite: tone-mapped galaxy + liquid glass.
+ *
+ * Glass panels are rounded rectangles tracked from the DOM. Inside each one
+ * the galaxy is refracted (a convex bevel bends light most at the rim),
+ * split into colour fringes, frosted with a blurred copy of the scene,
+ * tinted, and lit by a moving specular highlight. Outside, panels cast a
+ * soft contact shadow.
+ */
 export const COMPOSITE_FS = /* glsl */ `#version 300 es
 precision highp float;
+#define MAX_GLASS ${MAX_GLASS}
 in vec2 vUv;
 uniform sampler2D uScene;
 uniform sampler2D uBloom;
 uniform sampler2D uNebula;
 uniform sampler2D uStreakTex;
+uniform sampler2D uFrost;
+uniform vec2 uFrostTexel;
 uniform vec2 uResolution;
 uniform float uExposure;
 uniform float uBloomStrength;
@@ -249,6 +264,12 @@ uniform vec2 uFlashPos;
 uniform float uSaturation;
 uniform float uAberration;
 uniform float uStreak;
+uniform vec4 uGlassRect[MAX_GLASS];
+uniform vec4 uGlassParam[MAX_GLASS];
+uniform int uGlassCount;
+uniform vec2 uLight;
+uniform vec3 uAccent;
+uniform float uPx;
 out vec4 outColor;
 
 vec3 aces(vec3 x) {
@@ -262,44 +283,140 @@ float hash12(vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+vec3 flashAt(vec2 uv) {
+  float aspect = uResolution.x / uResolution.y;
+  vec2 fd = (uv - uFlashPos) * vec2(aspect, 1.0);
+  float fl = dot(fd, fd);
+  return uFlash * (vec3(1.0, 0.9, 0.78) * exp(-fl * 70.0) * 1.6 + vec3(1.0, 0.85, 0.7) * exp(-fl * 16.0) * 0.35 + vec3(0.6, 0.72, 1.0) * exp(-fl * 3.0) * 0.08);
+}
+
+vec3 grade(vec3 hdr) {
+  vec3 c = aces(hdr * uExposure);
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, uSaturation);
+  return pow(c, vec3(1.0 / 2.2));
+}
+
+vec3 hdrAt(vec2 uv) {
+  return texture(uScene, uv).rgb + texture(uBloom, uv).rgb * uBloomStrength + texture(uNebula, uv).rgb + flashAt(uv);
+}
+
+vec3 frostAt(vec2 uv) {
+  vec2 t = uFrostTexel * 1.5;
+  vec3 f = texture(uFrost, uv).rgb * 0.4
+    + (texture(uFrost, uv + vec2(t.x, t.y)).rgb + texture(uFrost, uv + vec2(-t.x, t.y)).rgb
+     + texture(uFrost, uv + vec2(t.x, -t.y)).rgb + texture(uFrost, uv + vec2(-t.x, -t.y)).rgb) * 0.15;
+  return f + texture(uBloom, uv).rgb * uBloomStrength * 0.9 + texture(uNebula, uv).rgb + flashAt(uv);
+}
+
+float sdBox(vec2 p, vec2 h, float r, out vec2 n) {
+  vec2 q = abs(p) - h + r;
+  float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  vec2 s = vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
+  if (q.x > 0.0 && q.y > 0.0) n = normalize(q) * s;
+  else n = q.x > q.y ? vec2(s.x, 0.0) : vec2(0.0, s.y);
+  return d;
+}
+
 void main() {
   vec2 uv = vUv;
-  vec2 d = uv - 0.5;
-  float r2 = dot(d, d);
-  vec2 off = d * r2 * uAberration;
-  vec3 col;
-  col.r = texture(uScene, uv - off).r;
-  col.g = texture(uScene, uv).g;
-  col.b = texture(uScene, uv + off).b;
-
-  vec3 bloom = texture(uBloom, uv).rgb;
-  col += bloom * uBloomStrength;
-
-  // Anamorphic streak from the wide bloom, stretched horizontally.
+  vec2 dc = uv - 0.5;
+  float r2 = dot(dc, dc);
+  vec2 off = dc * r2 * uAberration;
+  vec3 hdr;
+  hdr.r = texture(uScene, uv - off).r;
+  hdr.g = texture(uScene, uv).g;
+  hdr.b = texture(uScene, uv + off).b;
+  hdr += texture(uBloom, uv).rgb * uBloomStrength;
   if (uStreak > 0.0) {
     vec3 s = vec3(0.0);
     for (int i = -16; i <= 16; i++) {
       float x = float(i) / 16.0;
-      float w = exp(-abs(x) * 3.5);
-      s += texture(uStreakTex, uv + vec2(x * 0.22, 0.0)).rgb * w;
+      s += texture(uStreakTex, uv + vec2(x * 0.22, 0.0)).rgb * exp(-abs(x) * 3.5);
     }
-    col += s * vec3(0.5, 0.68, 1.0) * uStreak * 0.012;
+    hdr += s * vec3(0.55, 0.72, 1.0) * uStreak * 0.012;
+  }
+  hdr += texture(uNebula, uv).rgb + flashAt(uv);
+  vec3 col = grade(hdr);
+
+  // ── Liquid glass ──────────────────────────────────────────────────────
+  vec2 px = gl_FragCoord.xy;
+  float shadow = 0.0;
+  int hit = -1;
+  float hitD = 0.0;
+  vec2 hitN = vec2(0.0);
+  vec2 hitP = vec2(0.0);
+  vec2 hitH = vec2(0.0);
+  float hitR = 0.0;
+  for (int i = 0; i < MAX_GLASS; i++) {
+    if (i >= uGlassCount) break;
+    vec4 R = uGlassRect[i];
+    vec4 P = uGlassParam[i];
+    vec2 h = R.zw * 0.5;
+    vec2 p = px - (R.xy + h);
+    if (abs(p.x) > h.x + 70.0 * uPx || abs(p.y) > h.y + 70.0 * uPx) continue;
+    float r = min(P.x, min(h.x, h.y));
+    vec2 n;
+    float d = sdBox(p, h, r, n);
+    // Soft contact shadow, offset downward.
+    vec2 ns;
+    float ds = sdBox(p + vec2(0.0, 10.0 * uPx), h, r, ns);
+    shadow = max(shadow, P.y * 0.42 * exp(-max(ds, 0.0) / (26.0 * uPx)) * (ds > -2.0 ? 1.0 : 0.0));
+    if (d < 1.0) {
+      hit = i;
+      hitD = d;
+      hitN = n;
+      hitP = p;
+      hitH = h;
+      hitR = r;
+    }
+  }
+  col *= 1.0 - shadow;
+  // Vignette the sky only; glass panes keep their own, even tone.
+  float aspect = uResolution.x / uResolution.y;
+  float vig = smoothstep(0.95, 0.18, length(dc * vec2(aspect * 0.75, 1.0)));
+  col *= mix(1.0, vig, uVignette);
+
+  if (hit >= 0) {
+    vec4 R = uGlassRect[hit];
+    vec4 P = uGlassParam[hit];
+    float kind = P.z;
+    float press = P.w;
+    float depth = -hitD;
+    // kind: 0 sheet · 1 control · 2 clear · 3 accent
+    float frost = kind < 0.5 ? 0.9 : kind < 1.5 ? 0.62 : kind < 2.5 ? 0.18 : 0.55;
+    float darken = kind < 0.5 ? 0.5 : kind < 1.5 ? 0.3 : kind < 2.5 ? 0.08 : 0.2;
+    float refract = kind < 0.5 ? 0.55 : kind < 2.5 ? 1.0 : 0.8;
+    float bevel = clamp(min(hitR * 0.9 + 6.0 * uPx, min(hitH.x, hitH.y) * 0.75), 4.0 * uPx, 36.0 * uPx);
+    float t = clamp(1.0 - depth / bevel, 0.0, 1.0);
+    float lens = t * t * (3.0 - 2.0 * t);
+    // Gentle magnification across the whole pane, strong bending at the rim.
+    vec2 center = R.xy + hitH;
+    vec2 mag = (px - center) * 0.035 * refract;
+    vec2 shift = hitN * lens * bevel * 0.9 * refract;
+    vec3 sharp;
+    sharp.r = grade(hdrAt((px - mag - shift * 1.0) / uResolution)).r;
+    sharp.g = grade(hdrAt((px - mag - shift * 1.12) / uResolution)).g;
+    sharp.b = grade(hdrAt((px - mag - shift * 1.24) / uResolution)).b;
+    vec3 frosted = grade(frostAt((px - mag - shift * 1.1) / uResolution));
+    vec3 g = mix(sharp, frosted, frost);
+    g *= 1.0 - darken;
+    g += vec3(0.022);
+    if (kind > 2.5) g = mix(g, uAccent * 1.04, 0.9);
+    // Specular: a crisp rim lit from the light direction, a softer one opposite.
+    float lit = max(dot(hitN, uLight), 0.0);
+    float back = max(dot(hitN, -uLight), 0.0);
+    float rim = exp(-pow((depth - 0.9 * uPx) / (1.15 * uPx), 2.0));
+    g += vec3(rim * (0.18 + 0.7 * lit + 0.28 * back));
+    g += vec3(exp(-depth / (12.0 * uPx)) * (lit * 0.09 + back * 0.03));
+    // Faint sheen falling from the top edge.
+    float fromTop = (R.y + R.w) - px.y;
+    g += vec3(0.045) * exp(-fromTop / (48.0 * uPx));
+    g += vec3(0.06) * press;
+    float aa = clamp(0.5 - hitD / uPx, 0.0, 1.0);
+    col = mix(col, g, P.y * aa);
   }
 
-  col += texture(uNebula, uv).rgb;
-
-  float aspect = uResolution.x / uResolution.y;
-  vec2 fd = (uv - uFlashPos) * vec2(aspect, 1.0);
-  float fl = dot(fd, fd);
-  col += uFlash * (vec3(1.0, 0.88, 0.72) * exp(-fl * 70.0) * 1.6 + vec3(1.0, 0.8, 0.6) * exp(-fl * 16.0) * 0.35 + vec3(0.55, 0.65, 1.0) * exp(-fl * 3.0) * 0.08);
-
-  col *= uExposure;
-  col = aces(col);
-  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
-  col = mix(vec3(l), col, uSaturation);
-  float vig = smoothstep(0.95, 0.18, length(d * vec2(aspect * 0.75, 1.0)));
-  col *= mix(1.0, vig, uVignette);
-  col = pow(col, vec3(1.0 / 2.2));
   col += (hash12(gl_FragCoord.xy + fract(uTime) * 917.0) - 0.5) * uGrain;
   outColor = vec4(col, 1.0);
 }

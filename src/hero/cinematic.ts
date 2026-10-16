@@ -30,16 +30,15 @@ export const CHAPTERS: Chapter[] = [
 ];
 
 export const CAPTIONS: Caption[] = [
-  { at: 4200, text: 'Andromeda is falling toward us at 110 kilometres every second.' },
-  { at: 9000, text: 'Gravity has already made up its mind.' },
-  { at: 12300, text: 'First contact. Billions of stars are torn from their orbits.' },
-  { at: 18500, text: 'Tidal tails, a hundred thousand light-years long.' },
-  { at: 24800, text: 'It looks like destruction. It is transformation.' },
-  { at: 30600, text: 'They fall back into each other…' },
-  { at: 35200, text: '…until two become one.' },
-  { at: 40500, text: 'Milkomeda. A new galaxy is born.' },
-  { at: 47500, text: 'Every urge you outlast is a star pulled into your new self.' },
-  { at: 56000, text: null },
+  { at: 3800, text: 'Andromeda is approaching at 110 km/s.' },
+  { at: 8600, text: 'In about 4.5 billion years, they meet.' },
+  { at: 12300, text: 'First contact.' },
+  { at: 17500, text: 'Tidal tails stretch 100,000 light-years.' },
+  { at: 24800, text: 'Gravity pulls them back.' },
+  { at: 31400, text: 'Second pass.' },
+  { at: 35200, text: 'Merger.' },
+  { at: 40500, text: 'A new galaxy forms: Milkomeda.' },
+  { at: 47000, text: null },
 ];
 
 export const CINEMATIC_DURATION = 48000;

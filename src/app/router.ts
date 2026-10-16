@@ -1,7 +1,7 @@
 /**
- * Hash router with Anime.js page transitions. Each navigation blurs the
- * old view away, mounts the new one, staggers its [data-anim] children in
- * and glides the cosmos to the view's camera preset.
+ * Hash router. Views are full-screen layers over the cosmos; each can bring
+ * its own exit animation (sheets shrink back into the button that opened
+ * them), otherwise the old view blurs away and the new one fades in.
  */
 
 import { animate, stagger } from 'animejs';
@@ -14,8 +14,6 @@ export interface Route {
   path: string;
   title: string;
   view: ViewFactory;
-  /** App screens show the tab bar and require a vow. */
-  app: boolean;
   requiresVow?: boolean;
 }
 
@@ -26,6 +24,7 @@ export class Router {
   private view: View | null = null;
   private token = 0;
   private listeners = new Set<Listener>();
+  private history: string[] = [];
   current: Route | null = null;
   ctx!: AppContext;
 
@@ -38,8 +37,8 @@ export class Router {
 
   start(ctx: AppContext): void {
     this.ctx = ctx;
-    window.addEventListener('hashchange', () => this.resolve());
-    this.resolve();
+    window.addEventListener('hashchange', () => void this.resolve());
+    void this.resolve();
   }
 
   onChange(fn: Listener): () => void {
@@ -50,15 +49,22 @@ export class Router {
   go(path: string, replace = false): void {
     const hash = `#${path}`;
     if (location.hash === hash) {
-      this.resolve();
+      void this.resolve();
       return;
     }
     if (replace) {
       history.replaceState(null, '', hash);
-      this.resolve();
+      void this.resolve();
     } else {
       location.hash = hash;
     }
+  }
+
+  /** Back to the previous in-app screen, or home. */
+  back(fallback = '/home'): void {
+    const prev = this.history[this.history.length - 2];
+    if (prev) history.back();
+    else this.go(fallback);
   }
 
   private parse(): { path: string; params: URLSearchParams } {
@@ -71,7 +77,7 @@ export class Router {
     const { path, params } = this.parse();
     const hasVow = !!store.get().vow;
     if (path === '/' || path === '') {
-      this.go(hasVow ? '/sanctuary' : '/welcome', true);
+      this.go(hasVow ? '/home' : '/welcome', true);
       return;
     }
     const route = this.routes.get(path);
@@ -83,6 +89,8 @@ export class Router {
       this.go('/vow', true);
       return;
     }
+    if (this.history[this.history.length - 2] === path) this.history.pop();
+    else this.history.push(path);
     await this.render(route, params);
   }
 
@@ -91,14 +99,9 @@ export class Router {
     const ctx = this.ctx;
     const old = this.view;
     if (old) {
-      if (!ctx.reduced) {
-        await animate(old.el, {
-          opacity: 0,
-          y: -14,
-          filter: 'blur(10px)',
-          duration: 340,
-          ease: 'in(2)',
-        }).then();
+      if (old.leave && !ctx.reduced) await old.leave(route.path);
+      else if (!ctx.reduced) {
+        await animate(old.el, { opacity: 0, filter: 'blur(8px)', duration: 300, ease: 'in(2)' }).then();
       }
       old.destroy?.();
       old.el.remove();
@@ -108,34 +111,28 @@ export class Router {
     this.current = route;
     document.title = route.path === '/welcome' ? 'Divine Vow' : `${route.title} · Divine Vow`;
     document.documentElement.dataset.route = route.path.slice(1);
-    document.documentElement.classList.toggle('is-app', route.app);
     this.listeners.forEach((l) => l(route));
 
     const view = route.view(ctx, params);
     this.view = view;
     this.outlet.appendChild(view.el);
-    window.scrollTo(0, 0);
 
     const preset = view.preset ?? 'calm';
     if (preset !== 'hero' && preset !== 'none') {
-      const days = streakMs() / DAY;
-      const target = preset === 'vow' ? 0.4 : simTimeForDays(days);
-      ctx.cosmos.journey(target, preset, { shiftY: preset === 'sanctuary' ? -0.18 : 0 });
-      ctx.cosmos.setVeil(preset === 'sos' ? 0.35 : preset === 'sanctuary' || preset === 'vow' ? 0.12 : 0.32);
+      const target = preset === 'vow' ? 0.4 : simTimeForDays(streakMs() / DAY);
+      ctx.cosmos.journey(target, preset, { shiftY: view.shiftY ?? 0 });
     }
 
     view.enter?.();
 
     if (!ctx.reduced) {
       const items = $$('[data-anim]', view.el);
-      animate(view.el, { opacity: { from: 0, to: 1 }, duration: 500, ease: 'out(2)' });
       if (items.length) {
         animate(items, {
           opacity: { from: 0, to: 1 },
-          y: { from: 28, to: 0 },
-          filter: { from: 'blur(8px)', to: 'blur(0px)' },
-          duration: 900,
-          delay: stagger(70, { start: 80 }),
+          y: { from: 18, to: 0 },
+          duration: 700,
+          delay: stagger(50, { start: 60 }),
           ease: 'out(4)',
         });
       }
