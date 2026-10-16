@@ -1,0 +1,68 @@
+/** Hand-drawn line icon set (24×24, currentColor). */
+
+const svg = (body: string, extra = '') =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${body}</svg>`;
+
+export const icons = {
+  sparkle: svg('<path d="M12 3c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7Z"/><path d="M19 3v3M17.5 4.5h3"/>'),
+  star4: svg('<path d="M12 2.5c.8 5.4 4.1 8.7 9.5 9.5-5.4.8-8.7 4.1-9.5 9.5-.8-5.4-4.1-8.7-9.5-9.5 5.4-.8 8.7-4.1 9.5-9.5Z"/>'),
+  temple: svg('<path d="M3 21h18M5 21V10M19 21V10M9.5 21V10M14.5 21V10M3.5 10h17L12 4 3.5 10Z"/>'),
+  orbit: svg('<circle cx="12" cy="12" r="2.4"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" transform="rotate(-25 12 12)"/><circle cx="19.6" cy="8.4" r="1.1" fill="currentColor" stroke="none"/>'),
+  lifebuoy: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><path d="m5.6 5.6 3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/>'),
+  book: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 7.5h7M8.5 11h5"/>'),
+  constellation: svg('<circle cx="5" cy="17" r="1.4"/><circle cx="10" cy="9" r="1.4"/><circle cx="16" cy="13" r="1.4"/><circle cx="19.5" cy="5" r="1.4"/><path d="m6 15.8 3.2-5.6M11.3 9.8l3.5 2.4M16.7 11.7l2.1-5.3"/>'),
+  chart: svg('<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>'),
+  wind: svg('<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7"/>'),
+  wave: svg('<path d="M2 15c2.5 0 2.5-6 5-6s2.5 8 5 8 2.5-11 5-11 2.5 9 5 9"/>'),
+  gamepad: svg('<path d="M7 9h4M9 7v4M15 10h.01M18 12h.01"/><path d="M17.3 5H6.7A4.7 4.7 0 0 0 2 9.7V14a4 4 0 0 0 7 2.6l.6-.6h4.8l.6.6A4 4 0 0 0 22 14V9.7A4.7 4.7 0 0 0 17.3 5Z"/>'),
+  run: svg('<circle cx="14.5" cy="4.5" r="1.8"/><path d="m8 21 3-6 3 2v4M6 12l3-4 4 1 3 3 3 1M11 15l-1.5-3.5"/>'),
+  anchor: svg('<circle cx="12" cy="5" r="2.2"/><path d="M12 7.2V21M5 13a7 7 0 0 0 14 0M8.5 10.5h7"/>'),
+  heart: svg('<path d="M19.5 13.6 12 21l-7.5-7.4A4.9 4.9 0 0 1 12 6.4a4.9 4.9 0 0 1 7.5 7.2Z"/>'),
+  feather: svg('<path d="M20.2 3.8a6 6 0 0 0-8.5 0L5 10.5V19h8.5l6.7-6.7a6 6 0 0 0 0-8.5ZM16 8 2 22M17.5 15H9"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
+  check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
+  arrowRight: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  arrowLeft: svg('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  play: svg('<path d="M7 4.5v15l12-7.5-12-7.5Z"/>'),
+  replay: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+  volume: svg('<path d="M11 5 6 9H3v6h3l5 4V5ZM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
+  mute: svg('<path d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/>'),
+  lock: svg('<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>'),
+  shield: svg('<path d="M12 3 4.5 6v6c0 4.5 3.2 8 7.5 9 4.3-1 7.5-4.5 7.5-9V6L12 3Z"/><path d="m9 12 2 2 4-4"/>'),
+  download: svg('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  upload: svg('<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>'),
+  trash: svg('<path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/>'),
+  install: svg('<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5M10.5 18.5h3"/>'),
+  eye: svg('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'),
+  sunrise: svg('<path d="M12 3v4M4.2 9.2l1.4 1.4M18.4 10.6l1.4-1.4M2 17h20M6 17a6 6 0 0 1 12 0M8 21h8"/>'),
+  moon: svg('<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>'),
+  flame: svg('<path d="M12 22c4 0 7-2.7 7-6.8 0-4.2-3.3-6.4-4.2-10.2-2 1.4-3 3.5-3 5.7-1.5-.9-2.4-2.4-2.6-4.2C6.8 8.6 5 11.5 5 15.2 5 19.3 8 22 12 22Z"/>'),
+  crown: svg('<path d="m3 8 4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8Z"/>'),
+  info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>'),
+  menu: svg('<path d="M4 7h16M4 12h16M4 17h10"/>'),
+  hand: svg('<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V13M17 10a1.5 1.5 0 0 1 3 0v4.5a7.5 7.5 0 0 1-7.5 7.5h-1A6.5 6.5 0 0 1 5.6 18l-2.4-4.2a1.6 1.6 0 0 1 2.7-1.6L8 15"/>'),
+  calendar: svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>'),
+  clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  quote: svg('<path d="M9.5 7C6.5 7.8 5 10 5 13v4h5v-5H7.3c.2-1.7 1-2.9 2.6-3.6L9.5 7ZM18.5 7c-3 .8-4.5 3-4.5 6v4h5v-5h-2.7c.2-1.7 1-2.9 2.6-3.6L18.5 7Z"/>'),
+  film: svg('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/>'),
+};
+
+export type IconName = keyof typeof icons;
+
+/** Brand mark: two orbits merging around a four-pointed star. */
+export const brandMark = `<svg class="brand__mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="bm-g" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe9bf"/><stop offset="0.5" stop-color="#f4c97c"/><stop offset="1" stop-color="#b98443"/>
+    </linearGradient>
+    <radialGradient id="bm-r" cx="20" cy="20" r="9" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7e3"/><stop offset="1" stop-color="#f4c97c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="20" cy="20" r="9" fill="url(#bm-r)" opacity="0.6"/>
+  <ellipse cx="20" cy="20" rx="17" ry="7" transform="rotate(-30 20 20)" stroke="url(#bm-g)" stroke-width="1.4" opacity="0.9"/>
+  <ellipse cx="20" cy="20" rx="17" ry="7" transform="rotate(30 20 20)" stroke="url(#bm-g)" stroke-width="1.4" opacity="0.9"/>
+  <path d="M20 11.5c.6 4.4 3.6 7.4 8 8-4.4.6-7.4 3.6-8 8-.6-4.4-3.6-7.4-8-8 4.4-.6 7.4-3.6 8-8Z" fill="url(#bm-g)"/>
+</svg>`;
