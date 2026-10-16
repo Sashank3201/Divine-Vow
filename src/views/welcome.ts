@@ -33,6 +33,8 @@ export function welcomeView(ctx: AppContext): View {
   const cleanups: Array<() => void> = [];
   const splitters: TextSplitter[] = [];
   const wide = () => innerWidth > 860;
+  /** Laptops, and phones held sideways: copy bottom-left, galaxies up and right. */
+  const side = () => wide() || (innerWidth > innerHeight * 1.3 && innerHeight <= 520);
 
   const startFilm = () => {
     ctx.cosmos.playCinematic({});
@@ -42,7 +44,7 @@ export function welcomeView(ctx: AppContext): View {
   // (phones); the galaxies are lifted into the open sky above and beside it.
   const frame = (duration: number) => {
     const scene = ctx.cosmos.scene;
-    ctx.cosmos.setShift(wide() ? 0.16 : 0, wide() ? 0.16 : 0.04, duration);
+    ctx.cosmos.setShift(side() ? 0.16 : 0, side() ? 0.16 : 0.04, duration);
     ctx.cosmos.labelAvoid = content.getBoundingClientRect();
     ctx.cosmos.labelCeiling = 76;
     if (scene) animate(scene.user, { zoom: wide() ? 1.12 : 1, duration, ease: 'inOut(3)' });
