@@ -24,14 +24,14 @@ The copy is short and direct.
 
 | | |
 |---|---|
-| **Welcome** | The collision plays like a film: the name, one line, two glass buttons, and a caption pill that reshapes itself around each short, factual caption. Drag to orbit. |
+| **Welcome** | The collision plays like a film. On top: the name, cut from liquid glass so the galaxy bends through the letters, one line and two glass buttons. Drag to orbit. |
 | **Take the vow** | Five steps: name it privately, list your reasons, write the vow, pick a start time, then press and hold to seal it. |
 | **Home** | The galaxy, exactly where your streak has brought it (day 17 first contact, day 75 merger, day 90 Milkomeda), a day counter and two buttons: *I have an urge* and *Open dashboard*. |
 | **Dashboard** | Everything in one sheet: streak and next milestone, daily check-in, your reasons, galaxy journey, ten milestones, stats, when urges hit (by hour and weekday, top triggers) and recent journal entries. |
 | **Urge** | Strength slider and timer, plus six tools: box / 4-7-8 / 5-5 breathing, a 10-minute ride-it-out timer, *Star catcher* (60-second game), quick actions, 5-4-3-2-1 grounding and your reasons. Ends with an honest check-in. |
 | **Start again** | A slip resets the streak, not your history. Best streak, journal and stats are kept. |
 | **Journal** | Notes, urges and restarts in one timeline, grouped by day, with moods and tags. |
-| **Settings** | Edit the vow, PIN lock, sound, haptics, motion, galaxy quality, install, export / restore / erase. |
+| **Settings** | Edit the vow, PIN lock, haptics, motion, galaxy quality, install, export / restore / erase. |
 | **Lock** | Optional 4-digit PIN (SHA-256). The keypad is ten glass drops over the galaxy. |
 
 ## Getting started
@@ -70,6 +70,11 @@ that:
 - catches a specular rim light that follows the pointer (or the phone’s tilt),
 - casts a soft contact shadow.
 
+The title on the welcome screen goes further: its letters themselves are
+glass. Each glyph's live position is drawn into a small mask (crisp shapes
+plus a blurred copy used as a height field), and the shader bevels, refracts
+and lights every letter from it, following the Anime.js intro as it plays.
+
 The DOM stays transparent, so the glass always matches the live galaxy
 exactly. Sheets grow out of the button that opened them by animating real
 geometry (left, top, width, height, radius) with Anime.js springs, and the
@@ -99,8 +104,7 @@ The hero is not a video. It is physics, running in your browser.
   vignette and grain finish the frame, then the liquid glass is composited.
   Quality tiers and dynamic resolution keep it smooth on phones.
 - **Direction** (`src/hero/cinematic.ts`): one Anime.js timeline drives the
-  scene’s director (cosmic time, camera, exposure, bloom, flashes) and fires
-  the captions. Cosmic time follows a custom monotone-spline easing, so the
+  scene’s director (cosmic time, camera, exposure, bloom, flashes). Cosmic time follows a custom monotone-spline easing, so the
   film slows down at each impact.
 
 ## Anime.js
@@ -120,7 +124,7 @@ src/
   app/        cosmos controller, liquid-glass layer, router, PWA
   core/       store (localStorage), journey (streaks, milestones), content
   views/      welcome, vow, home, dashboard, sos (+ tools, game), journal, settings, lock, sheet
-  ui/         dom helpers, icons, overlays, morphs, sound, celebrations, relapse flow
+  ui/         dom helpers, icons, overlays, morphs, celebrations, relapse flow
   styles/     base (tokens, type), ui (glass, sheets, controls), screens
 scripts/      icon.svg + generate-icons.mjs
 ```

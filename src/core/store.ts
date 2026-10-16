@@ -60,7 +60,6 @@ export type QualityPref = 'auto' | 'high' | 'medium' | 'low';
 export interface Settings {
   motion: MotionPref;
   quality: QualityPref;
-  sound: boolean;
   haptics: boolean;
   /** SHA-256 of the PIN, if app lock is enabled. */
   pinHash: string | null;
@@ -88,7 +87,6 @@ const KEY = 'divine-vow:v1';
 const defaultSettings: Settings = {
   motion: 'auto',
   quality: 'auto',
-  sound: false,
   haptics: true,
   pinHash: null,
   seenIntro: false,

@@ -44,7 +44,28 @@
   bottom: 0;
   margin-block: auto;
   height: fit-content;
-  max-width: 560px;
+  max-width: min(780px, 62vw);
+}
+
+/* The name is cut from liquid glass: the compositor draws the letters, so
+   the DOM text only holds layout, selection and accessibility. */
+.welcome__title {
+  font-size: clamp(64px, 9.6vw, 140px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  padding-bottom: 0.04em;
+}
+
+.welcome__title[data-glass='text'] {
+  color: transparent;
+  text-shadow: none;
+}
+
+.glass-css .welcome__title[data-glass='text'] {
+  color: var(--text);
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.55);
 }
 
 .welcome__line {
@@ -67,34 +88,6 @@
   min-width: 168px;
 }
 
-.caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(30px + var(--safe-b));
-  margin-inline: auto;
-  height: 44px;
-  max-width: calc(100vw - 32px);
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.caption__text {
-  white-space: nowrap;
-}
-
-.caption__measure {
-  position: absolute;
-  visibility: hidden;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 @media (max-width: 860px) {
   .welcome__content {
     left: max(20px, var(--safe-l));
@@ -102,10 +95,11 @@
     top: auto;
     bottom: calc(26px + var(--safe-b));
     margin: 0;
+    max-width: none;
   }
 
   .welcome__title {
-    font-size: clamp(52px, 15vw, 80px);
+    font-size: clamp(54px, 16.5vw, 96px);
   }
 
   .welcome__line {
@@ -121,13 +115,6 @@
 
   .welcome__actions .btn {
     width: 100%;
-  }
-
-  .caption {
-    top: calc(72px + var(--safe-t));
-    bottom: auto;
-    height: 38px;
-    font-size: 14px;
   }
 }
 

@@ -7,7 +7,6 @@ import { MOVES, SURF_PROMPTS } from '../../core/content';
 import { icons } from '../../ui/icons';
 import { $, $$, el, esc, vibrate } from '../../ui/dom';
 import { burst } from '../../ui/celebrate';
-import { sound } from '../../ui/sound';
 
 export interface Panel {
   el: HTMLElement;
@@ -66,7 +65,6 @@ export function breathePanel(reduced: boolean): Panel {
       const ms = sec * 1000;
       tl.call(() => {
         label.textContent = LABELS[kind];
-        sound.breath(kind, sec);
         vibrate(kind === 'hold' ? 6 : 16);
         startCountdown(sec);
       }, at);
@@ -179,7 +177,6 @@ export function surfPanel(getIntensity: () => number, reduced: boolean): Panel {
     onComplete: () => {
       phaseEl.textContent = 'Done';
       timeEl.textContent = '0:00';
-      sound.chime(5);
       const r = dot.getBoundingClientRect();
       burst(r.left, r.top, 30, 140);
     },
@@ -223,7 +220,6 @@ export function movePanel(): Panel {
       doneEl.textContent = `${done} done.`;
       const r = b.getBoundingClientRect();
       burst(r.left + r.width / 2, r.top, 20, 110);
-      sound.chime(done);
       vibrate(20);
       void next();
     }
@@ -248,7 +244,6 @@ export function groundPanel(reduced: boolean): Panel {
   const render = () => {
     if (step >= GROUND.length) {
       root.innerHTML = `<p class="t-title">You’re here. You’re okay.</p><button class="btn btn--fill" type="button" data-restart>Again</button>`;
-      sound.chime(6);
       return;
     }
     const g = GROUND[step]!;
@@ -270,7 +265,6 @@ export function groundPanel(reduced: boolean): Panel {
     }
     found++;
     vibrate(12);
-    sound.chime(found);
     const d = $$('.ground__dots span', root)[found - 1];
     if (d) {
       d.classList.add('is-on');

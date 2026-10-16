@@ -8,7 +8,6 @@ import { JOURNAL_PROMPTS, MOODS, dailyPick } from '../core/content';
 import { icons } from '../ui/icons';
 import { $, $$, esc, relativeDay, timeOfDay } from '../ui/dom';
 import { confirmDialog, openModal, toast } from '../ui/overlay';
-import { sound } from '../ui/sound';
 import { createSheet } from './sheet';
 
 type Filter = 'all' | 'notes' | 'urges' | 'restarts';
@@ -169,7 +168,6 @@ export function journalView(ctx: AppContext): View {
           if (e2) Object.assign(e2, { title, text, mood, tags: [...tags] });
           else st.journal.push({ id: uid(), at: Date.now(), title, text, mood, tags: [...tags] });
         });
-        sound.chime(mood + 1);
         void m.close();
         render(true);
         toast(j ? 'Entry updated.' : 'Saved.');

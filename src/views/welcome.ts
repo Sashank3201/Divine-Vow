@@ -1,7 +1,6 @@
 /**
  * Welcome — the hero. The collision plays like a film; on top there is only
- * the name, one line, two liquid-glass buttons and a caption pill that
- * reshapes itself around each short, factual caption.
+ * the name, cut from liquid glass, one line and two glass buttons.
  */
 
 import { animate, createAnimatable, splitText, spring, stagger, utils, type TextSplitter } from 'animejs';
@@ -10,7 +9,6 @@ import { store } from '../core/store';
 import { icons } from '../ui/icons';
 import { $, $$, el } from '../ui/dom';
 import { openModal } from '../ui/overlay';
-import { sound } from '../ui/sound';
 
 export function welcomeView(ctx: AppContext): View {
   const hasVow = !!store.get().vow;
@@ -18,16 +16,10 @@ export function welcomeView(ctx: AppContext): View {
     <div class="screen welcome">
       <div class="topline topline--end">
         <button class="icon-btn" type="button" data-glass="control" data-action="replay" aria-label="Replay">${icons.replay}</button>
-        <button class="icon-btn" type="button" data-glass="control" data-action="sound" aria-label="Sound">${sound.enabled ? icons.volume : icons.mute}</button>
-      </div>
-
-      <div class="caption" data-glass="control" aria-live="polite" hidden>
-        <span class="caption__text" data-caption></span>
-        <span class="caption__measure" aria-hidden="true" data-measure></span>
       </div>
 
       <section class="welcome__content" data-content>
-        <h1 class="t-hero welcome__title" data-title>Divine Vow</h1>
+        <h1 class="t-hero welcome__title" data-glass="text" data-title>Divine Vow</h1>
         <p class="welcome__line" data-line>Quit the habit that’s holding you back. One day at a time.</p>
         <div class="welcome__actions" data-actions>
           <a class="btn btn--lg" data-glass="accent" data-morph href="${hasVow ? '#/home' : '#/vow'}">${hasVow ? 'Continue' : 'Take the vow'}</a>
@@ -38,44 +30,12 @@ export function welcomeView(ctx: AppContext): View {
   `);
 
   const content = $('[data-content]', root)!;
-  const pill = $('.caption', root)!;
-  const captionText = $('[data-caption]', root)!;
-  const measure = $('[data-measure]', root)!;
   const cleanups: Array<() => void> = [];
   const splitters: TextSplitter[] = [];
   const wide = () => innerWidth > 860;
 
-  // ── Caption pill: width springs to fit each new line ─────────────────
-  let captionToken = 0;
-  const setCaption = async (text: string | null) => {
-    const token = ++captionToken;
-    if (!text) {
-      await animate(pill, { opacity: 0, scale: 0.9, duration: 380, ease: 'in(2)' }).then();
-      if (token === captionToken) pill.hidden = true;
-      return;
-    }
-    measure.textContent = text;
-    const target = measure.offsetWidth + 36;
-    if (pill.hidden) {
-      pill.hidden = false;
-      captionText.textContent = text;
-      pill.style.width = `${target}px`;
-      animate(pill, { opacity: { from: 0, to: 1 }, scale: { from: 0.8, to: 1 }, ease: spring({ bounce: 0.3, duration: 600 }) });
-      return;
-    }
-    await animate(captionText, { opacity: 0, duration: 160, ease: 'in(2)' }).then();
-    if (token !== captionToken) return;
-    captionText.textContent = text;
-    animate(pill, { width: target, ease: spring({ bounce: 0.25, duration: 560 }) });
-    animate(captionText, { opacity: 1, duration: 300, delay: 120, ease: 'out(2)' });
-  };
-
   const startFilm = () => {
-    void setCaption(null);
-    ctx.cosmos.playCinematic({
-      caption: (t) => void setCaption(t),
-      impact: (s) => sound.impact(s),
-    });
+    ctx.cosmos.playCinematic({});
   };
 
   // ── Framing: on wide screens the galaxies sit to the right of the copy ─
@@ -84,7 +44,7 @@ export function welcomeView(ctx: AppContext): View {
     ctx.cosmos.setShift(wide() ? 0.32 : 0, 0, duration);
     ctx.cosmos.labelSafeLeft = wide() ? content.getBoundingClientRect().right + 12 : 0;
     ctx.cosmos.labelFloor = wide() ? Infinity : innerHeight * 0.45;
-    ctx.cosmos.labelCeiling = wide() ? 0 : 120;
+    ctx.cosmos.labelCeiling = wide() ? 0 : 76;
     if (scene) animate(scene.user, { zoom: wide() ? 1.22 : 1, duration, ease: 'inOut(3)' });
   };
 
@@ -152,10 +112,6 @@ export function welcomeView(ctx: AppContext): View {
     if (!t) return;
     if (t.dataset.action === 'replay') startFilm();
     else if (t.dataset.action === 'how') how();
-    else if (t.dataset.action === 'sound') {
-      const on = sound.toggle();
-      t.innerHTML = on ? icons.volume : icons.mute;
-    }
   };
   root.addEventListener('click', onClick);
 

@@ -6,7 +6,6 @@
 
 import { animate, createTimer, spring, utils, type Timer } from 'animejs';
 import { $, el, vibrate } from '../../ui/dom';
-import { sound } from '../../ui/sound';
 
 type Kind = 'star' | 'blue' | 'comet' | 'void';
 
@@ -156,7 +155,6 @@ export function starCatcher(onCatch?: () => void): { el: HTMLElement; destroy():
       const pts = POINTS[b.kind] * mult;
       score += pts;
       vibrate(12);
-      sound.chime(Math.min(7, combo % 8));
       explode(b.x, b.y, COLORS[b.kind], b.kind === 'comet' ? 36 : 20);
       pops.push({ x: b.x, y: b.y, text: mult > 1 ? `+${pts} ×${mult}` : `+${pts}`, life: 1, color: '#fff' });
       onCatch?.();
@@ -339,7 +337,6 @@ export function starCatcher(onCatch?: () => void): { el: HTMLElement; destroy():
         <p class="t-sub">${record ? 'Your best round yet.' : `Best: ${Math.max(best, score)}`}</p>
         <button class="btn btn--accent" type="button" data-play>Play again</button>
       </div>`);
-    if (record) sound.chime(7);
   };
 
   root.addEventListener('click', (e) => {

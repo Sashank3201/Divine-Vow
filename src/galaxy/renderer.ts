@@ -64,6 +64,21 @@ export interface GlassFrame {
   count: number;
   light: [number, number];
   accent: [number, number, number];
+  /** Glass lettering (at most one element per frame). */
+  text: TextGlass | null;
+}
+
+/** A glyph mask (R crisp, G soft height) and where it sits, in canvas pixels. */
+export interface TextGlass {
+  canvas: HTMLCanvasElement;
+  /** Bumped whenever the canvas is redrawn. */
+  version: number;
+  /** x, y (bottom), width, height. */
+  rect: Float32Array;
+  /** alpha, gradient step (mask px), shadow offset (mask px), enabled. */
+  param: Float32Array;
+  /** x: refraction bend (canvas px). */
+  opt: Float32Array;
 }
 
 export interface ParticleRanges {
@@ -95,6 +110,9 @@ export class GalaxyRenderer {
   private nebulaTarget: Target | null = null;
   private mips: Target[] = [];
   private frost: Target | null = null;
+  private textTex: WebGLTexture | null = null;
+  private textVersion = -1;
+  private textCanvas: HTMLCanvasElement | null = null;
   private width = 1;
   private height = 1;
   private particleCount = 0;
@@ -141,6 +159,7 @@ export class GalaxyRenderer {
       'uScene', 'uBloom', 'uNebula', 'uResolution', 'uExposure', 'uBloomStrength', 'uVignette', 'uGrain', 'uTime',
       'uFlash', 'uFlashPos', 'uSaturation', 'uAberration', 'uStreak', 'uStreakTex',
       'uFrost', 'uFrostTexel', 'uGlassRect', 'uGlassParam', 'uGlassCount', 'uLight', 'uAccent', 'uPx',
+      'uTextMask', 'uTextRect', 'uTextParam', 'uTextOpt',
     ]);
 
     this.posBuffer = gl.createBuffer()!;
@@ -469,13 +488,52 @@ export class GalaxyRenderer {
       gl.uniform3f(c.u.uAccent!, g.accent[0], g.accent[1], g.accent[2]);
     }
     gl.uniform1f(c.u.uPx!, f.pixelRatio ?? 1);
+    const t = g?.text ?? null;
+    gl.activeTexture(gl.TEXTURE5);
+    if (t) {
+      this.uploadText(t);
+      gl.uniform4fv(c.u.uTextRect!, t.rect);
+      gl.uniform4fv(c.u.uTextParam!, t.param);
+      gl.uniform4fv(c.u.uTextOpt!, t.opt);
+      if (!g || g.count === 0) {
+        gl.uniform2f(c.u.uLight!, g?.light[0] ?? -0.45, g?.light[1] ?? 0.89);
+      }
+    } else {
+      gl.bindTexture(gl.TEXTURE_2D, this.frost?.tex ?? this.scene.tex);
+      gl.uniform4f(c.u.uTextParam!, 0, 0, 0, 0);
+    }
+    gl.uniform1i(c.u.uTextMask!, 5);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindVertexArray(null);
   }
 
+  /** Binds the glyph mask to the active unit, re-uploading it only when it changed. */
+  private uploadText(t: TextGlass): void {
+    const gl = this.gl;
+    if (!this.textTex) {
+      this.textTex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, this.textTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    gl.bindTexture(gl.TEXTURE_2D, this.textTex);
+    if (t.version === this.textVersion && t.canvas === this.textCanvas) return;
+    this.textVersion = t.version;
+    this.textCanvas = t.canvas;
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, t.canvas);
+  }
+
   dispose(): void {
     const gl = this.gl;
+    if (this.textTex) gl.deleteTexture(this.textTex);
+    this.textTex = null;
+    this.textVersion = -1;
     this.deleteTarget(this.scene);
     this.deleteTarget(this.nebulaTarget);
     this.deleteTarget(this.frost);

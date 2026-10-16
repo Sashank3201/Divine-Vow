@@ -20,7 +20,6 @@ import { settingsView } from './views/settings';
 import { requireUnlock } from './views/lock';
 import { celebrate } from './ui/celebrate';
 import { rememberOrigin } from './ui/morph';
-import { sound } from './ui/sound';
 import type { Quality } from './galaxy/scene';
 
 const routes: Route[] = [
@@ -72,9 +71,6 @@ async function boot(): Promise<void> {
   };
   window.setTimeout(checkMilestones, 1500);
   window.setInterval(checkMilestones, 20_000);
-
-  // Audio may only start after a gesture.
-  window.addEventListener('pointerdown', () => sound.resume(), { once: true });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) cosmos.pause();

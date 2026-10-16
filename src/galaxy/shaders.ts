@@ -270,6 +270,10 @@ uniform int uGlassCount;
 uniform vec2 uLight;
 uniform vec3 uAccent;
 uniform float uPx;
+uniform sampler2D uTextMask;
+uniform vec4 uTextRect;
+uniform vec4 uTextParam;
+uniform vec4 uTextOpt;
 out vec4 outColor;
 
 vec3 aces(vec3 x) {
@@ -415,6 +419,53 @@ void main() {
     g += vec3(0.06) * press;
     float aa = clamp(0.5 - hitD / uPx, 0.0, 1.0);
     col = mix(col, g, P.y * aa);
+  }
+
+  // ── Glass lettering ───────────────────────────────────────────────────
+  // R: crisp coverage. G: blurred coverage, read as a height field whose
+  // slope gives every letter a rounded bevel that bends the galaxy.
+  if (uTextParam.w > 0.5) {
+    vec2 tq = (px - uTextRect.xy) / uTextRect.zw;
+    if (tq.x > 0.0 && tq.x < 1.0 && tq.y > 0.0 && tq.y < 1.0) {
+      vec2 tuv = vec2(tq.x, 1.0 - tq.y);
+      vec2 tt = 1.0 / vec2(textureSize(uTextMask, 0));
+      vec2 m = texture(uTextMask, tuv).rg;
+      float a = uTextParam.x;
+      // Soft shadow cast just below the letters.
+      float sh = texture(uTextMask, tuv - vec2(0.0, uTextParam.z * tt.y)).g;
+      col *= 1.0 - sh * 0.42 * a * (1.0 - m.r);
+      if (m.r > 0.002) {
+        vec2 e = uTextParam.y * tt;
+        float gx = texture(uTextMask, tuv + vec2(e.x, 0.0)).g - texture(uTextMask, tuv - vec2(e.x, 0.0)).g;
+        float gy = texture(uTextMask, tuv - vec2(0.0, e.y)).g - texture(uTextMask, tuv + vec2(0.0, e.y)).g;
+        vec2 grad = vec2(gx, gy);
+        float slope = length(grad);
+        vec2 nOut = slope > 1e-4 ? -grad / slope : vec2(0.0);
+        float edge = clamp(slope * 1.5, 0.0, 1.0);
+        float bevel = edge * edge * (3.0 - 2.0 * edge);
+        // Refraction: the galaxy is pulled in through the rim, slightly magnified.
+        vec2 center = uTextRect.xy + uTextRect.zw * 0.5;
+        vec2 mag = (px - center) * 0.04;
+        vec2 shift = nOut * bevel * uTextOpt.x;
+        vec3 sharp;
+        sharp.r = grade(hdrAt((px - mag - shift * 1.0) / uResolution)).r;
+        sharp.g = grade(hdrAt((px - mag - shift * 1.18) / uResolution)).g;
+        sharp.b = grade(hdrAt((px - mag - shift * 1.36) / uResolution)).b;
+        vec3 frosted = grade(frostAt((px - mag - shift) / uResolution));
+        // Clear body: mostly the bent galaxy, lifted more over empty sky so it still reads as glass.
+        vec3 body = mix(sharp, frosted, 0.3);
+        float dark = 1.0 - smoothstep(0.02, 0.35, dot(body, vec3(0.2126, 0.7152, 0.0722)));
+        vec3 g = body * 1.05 + vec3(0.11 + 0.09 * dark + 0.06 * smoothstep(0.3, 0.9, tq.y));
+        float lit = max(dot(nOut, uLight), 0.0);
+        float back = max(dot(nOut, -uLight), 0.0);
+        // A faint dark band where the rim refracts, a soft fresnel glow, then crisp highlights.
+        g *= 1.0 - 0.16 * bevel * (1.0 - lit);
+        g += vec3(0.1 * bevel);
+        g += vec3(pow(edge, 3.0) * (0.85 * lit + 0.28 * back + 0.12));
+        g += vec3(0.55) * pow(edge, 8.0) * lit;
+        col = mix(col, g, m.r * a);
+      }
+    }
   }
 
   col += (hash12(gl_FragCoord.xy + fract(uTime) * 917.0) - 0.5) * uGrain;
