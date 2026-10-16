@@ -39,18 +39,15 @@
 
 .welcome__content {
   position: absolute;
-  left: max(64px, 6vw);
-  top: 0;
-  bottom: 0;
-  margin-block: auto;
-  height: fit-content;
-  max-width: min(780px, 62vw);
+  left: max(56px, 5vw, var(--safe-l));
+  bottom: calc(max(44px, 6vh) + var(--safe-b));
+  max-width: min(760px, 70vw);
 }
 
 /* The name is cut from liquid glass: the compositor draws the letters, so
    the DOM text only holds layout, selection and accessibility. */
 .welcome__title {
-  font-size: clamp(64px, 9.6vw, 140px);
+  font-size: clamp(64px, 7.4vw, 116px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.05em;
@@ -69,9 +66,9 @@
 }
 
 .welcome__line {
-  margin-top: 18px;
-  max-width: 24ch;
-  font-size: 21px;
+  margin-top: 14px;
+  max-width: 30ch;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--text-2);
@@ -81,40 +78,44 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 36px;
+  margin-top: 28px;
 }
 
 .welcome__actions .btn {
   min-width: 168px;
 }
 
+/* Phones: a compact block along the bottom, so the galaxies own the screen. */
 @media (max-width: 860px) {
   .welcome__content {
-    left: max(20px, var(--safe-l));
-    right: max(20px, var(--safe-r));
-    top: auto;
-    bottom: calc(26px + var(--safe-b));
-    margin: 0;
+    left: max(18px, var(--safe-l));
+    right: max(18px, var(--safe-r));
+    bottom: calc(18px + var(--safe-b));
     max-width: none;
   }
 
   .welcome__title {
-    font-size: clamp(54px, 16.5vw, 96px);
+    font-size: clamp(40px, 11.5vw, 60px);
   }
 
   .welcome__line {
-    margin-top: 12px;
-    font-size: 18px;
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.3;
   }
 
   .welcome__actions {
-    flex-direction: column;
-    margin-top: 26px;
-    gap: 10px;
+    flex-wrap: nowrap;
+    margin-top: 16px;
+    gap: 8px;
   }
 
   .welcome__actions .btn {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
+    height: 46px;
+    padding: 0 14px;
+    font-size: 15px;
   }
 }
 

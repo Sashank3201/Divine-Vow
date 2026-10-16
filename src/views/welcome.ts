@@ -38,14 +38,14 @@ export function welcomeView(ctx: AppContext): View {
     ctx.cosmos.playCinematic({});
   };
 
-  // ── Framing: on wide screens the galaxies sit to the right of the copy ─
+  // ── Framing: the copy sits bottom-left (laptops) or along the bottom
+  // (phones); the galaxies are lifted into the open sky above and beside it.
   const frame = (duration: number) => {
     const scene = ctx.cosmos.scene;
-    ctx.cosmos.setShift(wide() ? 0.32 : 0, 0, duration);
-    ctx.cosmos.labelSafeLeft = wide() ? content.getBoundingClientRect().right + 12 : 0;
-    ctx.cosmos.labelFloor = wide() ? Infinity : innerHeight * 0.45;
-    ctx.cosmos.labelCeiling = wide() ? 0 : 76;
-    if (scene) animate(scene.user, { zoom: wide() ? 1.22 : 1, duration, ease: 'inOut(3)' });
+    ctx.cosmos.setShift(wide() ? 0.16 : 0, wide() ? 0.16 : 0.04, duration);
+    ctx.cosmos.labelAvoid = content.getBoundingClientRect();
+    ctx.cosmos.labelCeiling = 76;
+    if (scene) animate(scene.user, { zoom: wide() ? 1.12 : 1, duration, ease: 'inOut(3)' });
   };
 
   const intro = () => {
@@ -132,8 +132,7 @@ export function welcomeView(ctx: AppContext): View {
     destroy() {
       cleanups.forEach((c) => c());
       splitters.forEach((s) => s.revert());
-      ctx.cosmos.labelSafeLeft = 0;
-      ctx.cosmos.labelFloor = Infinity;
+      ctx.cosmos.labelAvoid = null;
       ctx.cosmos.labelCeiling = 0;
       const scene = ctx.cosmos.scene;
       if (scene) animate(scene.user, { zoom: 1, duration: 1200, ease: 'inOut(3)' });

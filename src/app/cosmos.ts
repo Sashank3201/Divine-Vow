@@ -47,6 +47,8 @@ export class Cosmos {
   labelFloor = Infinity;
   labelCeiling = 0;
   labelSafeLeft = 0;
+  /** Labels that would land on this box (the screen's text) are hidden. */
+  labelAvoid: DOMRect | null = null;
 
   constructor(canvas: HTMLCanvasElement, quality: Quality | undefined, reduced: boolean) {
     this.reduced = reduced;
@@ -115,8 +117,6 @@ export class Cosmos {
     this.labels.forEach((l, i) => {
       const p = points[i]!;
       const r = (radii[i]! * scale) / Math.max(p.depth, 0.1);
-      const show = (i < 2 ? pairVisible : mergedVisible) && p.visible && p.y < this.labelFloor && p.y > this.labelCeiling;
-      l.opacity += ((show ? 1 : 0) - l.opacity) * 0.08;
       const other = i === 0 ? points[1]! : i === 1 ? points[0]! : null;
       const fitsLeft = p.x - r * 0.7 - W > this.labelSafeLeft;
       const fitsRight = p.x + r * 0.7 + W < innerWidth;
@@ -127,6 +127,12 @@ export class Cosmos {
       const x = top ? utils.clamp(p.x, 60, innerWidth - 60) : flip ? p.x - r * 0.7 : p.x + r * 0.7;
       const y = top ? p.y - r * 0.75 : p.y - r * 0.45;
       boxes[i] = { x: flip && !top ? x - W : x, y };
+      const bx = top ? x - W / 2 : flip ? x - W : x;
+      const av = this.labelAvoid;
+      const onText = !!av && bx < av.right + 16 && bx + W > av.left - 16 && y < av.bottom + 16 && y + 24 > av.top - 16;
+      const show =
+        (i < 2 ? pairVisible : mergedVisible) && p.visible && p.y < this.labelFloor && p.y > this.labelCeiling && !onText;
+      l.opacity += ((show ? 1 : 0) - l.opacity) * 0.08;
       l.el.classList.toggle('is-flipped', flip && !top);
       l.el.classList.toggle('is-top', top);
       l.el.style.opacity = l.opacity.toFixed(3);
