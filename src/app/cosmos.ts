@@ -1,17 +1,15 @@
 /**
  * Cosmos — the living background behind every screen, and the canvas that
- * paints the liquid glass. Owns the GalaxyScene, the galaxy labels and the
- * transitions between the hero film and journey mode (where cosmic time
+ * paints the liquid glass. Owns the GalaxyScene and the transitions between
+ * the hero film and journey mode (where cosmic time
  * follows the user's streak). Every transition is an Anime.js tween on the
  * scene director.
  */
 
 import { animate, createTimer, utils, type JSAnimation, type Timeline, type Timer } from 'animejs';
 import { GalaxyScene, type Director, type FrameInfo, type Quality } from '../galaxy/scene';
-import { MILKY_WAY, ANDROMEDA } from '../galaxy/model';
 import { createCinematic, type CinematicHandlers } from '../hero/cinematic';
 import { GlassLayer } from './glass';
-import { $ } from '../ui/dom';
 
 export type CameraPreset = 'hero' | 'home' | 'dashboard' | 'sos' | 'calm' | 'vow';
 
@@ -26,11 +24,6 @@ const PRESETS: Record<CameraPreset, Partial<Director>> = {
 
 type FrameListener = (info: FrameInfo) => void;
 
-interface Label {
-  el: HTMLElement;
-  opacity: number;
-}
-
 export class Cosmos {
   readonly scene: GalaxyScene | null;
   readonly glass: GlassLayer;
@@ -38,17 +31,8 @@ export class Cosmos {
   private cinematic: Timeline | null = null;
   private idle: JSAnimation | null = null;
   private presetAnim: JSAnimation | null = null;
-  private labels: Label[] = [];
-  private labelMode: 'pair' | 'merged' | 'off' = 'off';
   private readonly reduced: boolean;
   private fallbackTimer: Timer | null = null;
-
-  /** Labels are kept inside this vertical band and right of this x. */
-  labelFloor = Infinity;
-  labelCeiling = 0;
-  labelSafeLeft = 0;
-  /** Labels that would land on this box (the screen's text) are hidden. */
-  labelAvoid: DOMRect | null = null;
 
   constructor(canvas: HTMLCanvasElement, quality: Quality | undefined, reduced: boolean) {
     this.reduced = reduced;
@@ -67,7 +51,6 @@ export class Cosmos {
         onUpdate: () => this.listeners.forEach((l) => l(this.fakeFrame())),
       });
     }
-    this.buildLabels();
     this.bindPointer();
   }
 
@@ -85,72 +68,6 @@ export class Cosmos {
     return { simTime: 0, separation: 6, dynamic: false, cores: [p, p], center: p, fps: 30 };
   }
 
-  // ── Labels ────────────────────────────────────────────────────────────
-
-  private buildLabels(): void {
-    const root = $('#labels');
-    if (!root) return;
-    const make = (name: string) => {
-      const el = document.createElement('div');
-      el.className = 'galaxy-label';
-      el.textContent = name;
-      root.appendChild(el);
-      return { el, opacity: 0 };
-    };
-    this.labels = [make(MILKY_WAY.name), make(ANDROMEDA.name), make('Milkomeda')];
-  }
-
-  setLabels(mode: 'pair' | 'merged' | 'off'): void {
-    this.labelMode = mode;
-  }
-
-  private updateLabels(f: FrameInfo): void {
-    if (!this.labels.length || !this.scene) return;
-    const t = f.simTime;
-    const pairVisible = this.labelMode === 'pair' && f.separation > 2.6 && t < 26;
-    const mergedVisible = this.labelMode !== 'off' && t > 36;
-    const points = [f.cores[0], f.cores[1], f.center];
-    const radii = [MILKY_WAY.radius, ANDROMEDA.radius, 1.8];
-    const scale = this.scene.pixelsPerUnit;
-    const W = 120;
-    const boxes: Array<{ x: number; y: number }> = [];
-    this.labels.forEach((l, i) => {
-      const p = points[i]!;
-      const r = (radii[i]! * scale) / Math.max(p.depth, 0.1);
-      const other = i === 0 ? points[1]! : i === 1 ? points[0]! : null;
-      const fitsLeft = p.x - r * 0.7 - W > this.labelSafeLeft;
-      const fitsRight = p.x + r * 0.7 + W < innerWidth;
-      let flip = other ? p.x < other.x : false;
-      if (flip && !fitsLeft) flip = false;
-      if (!flip && !fitsRight) flip = true;
-      const top = (!fitsLeft && !fitsRight) || i === 2;
-      const x = top ? utils.clamp(p.x, 60, innerWidth - 60) : flip ? p.x - r * 0.7 : p.x + r * 0.7;
-      const y = top ? p.y - r * 0.75 : p.y - r * 0.45;
-      boxes[i] = { x: flip && !top ? x - W : x, y };
-      const bx = top ? x - W / 2 : flip ? x - W : x;
-      const av = this.labelAvoid;
-      const onText = !!av && bx < av.right + 16 && bx + W > av.left - 16 && y < av.bottom + 16 && y + 24 > av.top - 16;
-      const show =
-        (i < 2 ? pairVisible : mergedVisible) && p.visible && p.y < this.labelFloor && p.y > this.labelCeiling && !onText;
-      l.opacity += ((show ? 1 : 0) - l.opacity) * 0.08;
-      l.el.classList.toggle('is-flipped', flip && !top);
-      l.el.classList.toggle('is-top', top);
-      l.el.style.opacity = l.opacity.toFixed(3);
-      l.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-      l.el.style.visibility = l.opacity < 0.01 ? 'hidden' : 'visible';
-    });
-    const a = boxes[0];
-    const b = boxes[1];
-    if (a && b && Math.abs(a.x - b.x) < W && Math.abs(a.y - b.y) < 24) {
-      const p = points[1]!;
-      const r = (radii[1]! * scale) / Math.max(p.depth, 0.1);
-      const lb = this.labels[1]!;
-      lb.el.classList.remove('is-flipped');
-      lb.el.classList.add('is-top');
-      lb.el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${(p.y - r * 0.75).toFixed(1)}px, 0)`;
-    }
-  }
-
   private frame(f: FrameInfo): void {
     // Keep the film in sync with the physics on slow devices. Anime.js
     // re-anchors a timer whenever its speed is set, so only touch it when
@@ -164,7 +81,6 @@ export class Cosmos {
       if (Math.abs(delta) > 0.03) tl.speed = utils.clamp(tl.speed + delta * 0.35, 0.12, 1);
       else if (target === 1 && tl.speed !== 1) tl.speed = 1;
     }
-    this.updateLabels(f);
     this.listeners.forEach((l) => l(f));
   }
 
@@ -201,10 +117,23 @@ export class Cosmos {
     let vx = 0;
     let vy = 0;
     let lt = 0;
+    let id = -1;
     let anim: JSAnimation | null = null;
+    // Two fingers on the screen is a pinch for the browser, never an orbit.
+    const touches = new Set<number>();
+    const press = (e: PointerEvent) => {
+      touches.add(e.pointerId);
+      if (touches.size > 1) {
+        dragging = false;
+        vx = vy = 0;
+      }
+    };
+    const lift = (e: PointerEvent) => touches.delete(e.pointerId);
     const down = (e: PointerEvent) => {
+      if (touches.size > 1) return;
       if ((e.target as HTMLElement).closest('a, button, input, textarea, [data-glass]')) return;
       dragging = true;
+      id = e.pointerId;
       lx = e.clientX;
       ly = e.clientY;
       lt = performance.now();
@@ -212,21 +141,21 @@ export class Cosmos {
       anim?.pause();
     };
     const move = (e: PointerEvent) => {
-      if (!dragging) return;
+      if (!dragging || e.pointerId !== id) return;
       const now = performance.now();
       const dx = e.clientX - lx;
       const dy = e.clientY - ly;
       const dt = Math.max(1, now - lt);
       scene.user.azimuth -= dx * 0.005;
       scene.user.elevation = utils.clamp(scene.user.elevation + dy * 0.004, -0.8, 0.45);
-      vx = (-dx * 0.005) / dt;
-      vy = (dy * 0.004) / dt;
+      vx = utils.clamp((-dx * 0.005) / dt, -0.012, 0.012);
+      vy = utils.clamp((dy * 0.004) / dt, -0.008, 0.008);
       lx = e.clientX;
       ly = e.clientY;
       lt = now;
     };
-    const up = () => {
-      if (!dragging) return;
+    const up = (e: PointerEvent) => {
+      if (!dragging || e.pointerId !== id) return;
       dragging = false;
       anim = animate(scene.user, {
         azimuth: scene.user.azimuth + vx * 420,
@@ -238,11 +167,17 @@ export class Cosmos {
         ease: 'out(3)',
       });
     };
+    window.addEventListener('pointerdown', press, { capture: true, passive: true });
+    window.addEventListener('pointerup', lift, { capture: true, passive: true });
+    window.addEventListener('pointercancel', lift, { capture: true, passive: true });
     surface.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move, { passive: true });
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
     return () => {
+      window.removeEventListener('pointerdown', press, { capture: true });
+      window.removeEventListener('pointerup', lift, { capture: true });
+      window.removeEventListener('pointercancel', lift, { capture: true });
       surface.removeEventListener('pointerdown', down);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -259,7 +194,6 @@ export class Cosmos {
     scene.setFrameRate(240);
     scene.user.azimuth = 0;
     scene.user.elevation = 0;
-    this.setLabels('pair');
     this.cinematic = createCinematic(scene.director, scene.sim.events, {
       ...handlers,
       complete: () => {
@@ -290,7 +224,6 @@ export class Cosmos {
     if (!d) return;
     this.stopAll();
     Object.assign(d, { simTime, exposure: 1, flash: 0, burst: 0, shake: 0, autoOrbit: 0, streak: 0.3 });
-    this.setLabels('pair');
   }
 
   stopAll(): void {
@@ -317,7 +250,6 @@ export class Cosmos {
     this.presetAnim?.pause();
     // Glass panes track the DOM every frame, so the canvas keeps full rate.
     scene.setFrameRate(240);
-    this.setLabels('off');
     const p = PRESETS[preset];
     const rewinding = simTarget < scene.sim.time - 0.01;
     if (rewinding) {
