@@ -1,42 +1,36 @@
 import '@fontsource-variable/inter';
-import '@fontsource-variable/cinzel';
-import '@fontsource-variable/cormorant-garamond';
-import '@fontsource-variable/cormorant-garamond/wght-italic.css';
 import './styles/base.css';
-import './styles/components.css';
-import './styles/hero.css';
-import './styles/views.css';
+import './styles/ui.css';
+import './styles/screens.css';
 
 import { animate, engine } from 'animejs';
 import { Cosmos } from './app/cosmos';
 import { Router, type Route } from './app/router';
-import { mountShell } from './app/shell';
 import { initPWA } from './app/pwa';
 import type { AppContext } from './app/types';
 import { store } from './core/store';
 import { syncMilestones } from './core/journey';
-import { landingView } from './views/landing';
+import { welcomeView } from './views/welcome';
 import { vowView } from './views/vow';
-import { sanctuaryView } from './views/sanctuary';
+import { homeView } from './views/home';
+import { dashboardView } from './views/dashboard';
 import { sosView } from './views/sos';
 import { journalView } from './views/journal';
-import { skyView } from './views/sky';
-import { insightsView } from './views/insights';
 import { settingsView } from './views/settings';
 import { requireUnlock } from './views/lock';
 import { celebrate } from './ui/celebrate';
+import { rememberOrigin } from './ui/morph';
 import { sound } from './ui/sound';
 import type { Quality } from './galaxy/scene';
 
 const routes: Route[] = [
-  { path: '/welcome', title: 'Welcome', view: landingView, app: false },
-  { path: '/vow', title: 'Your vow', view: vowView, app: false },
-  { path: '/sanctuary', title: 'Sanctuary', view: sanctuaryView, app: true, requiresVow: true },
-  { path: '/sos', title: 'I feel the pull', view: sosView, app: true },
-  { path: '/journal', title: 'Journal', view: journalView, app: true, requiresVow: true },
-  { path: '/sky', title: 'Your sky', view: skyView, app: true, requiresVow: true },
-  { path: '/insights', title: 'Insights', view: insightsView, app: true, requiresVow: true },
-  { path: '/settings', title: 'Settings', view: settingsView, app: true },
+  { path: '/welcome', title: 'Welcome', view: welcomeView },
+  { path: '/vow', title: 'Take the vow', view: vowView },
+  { path: '/home', title: 'Home', view: homeView, requiresVow: true },
+  { path: '/dashboard', title: 'Dashboard', view: dashboardView, requiresVow: true },
+  { path: '/sos', title: 'Urge', view: sosView },
+  { path: '/journal', title: 'Journal', view: journalView, requiresVow: true },
+  { path: '/settings', title: 'Settings', view: settingsView },
 ];
 
 function motionReduced(): boolean {
@@ -58,16 +52,16 @@ async function boot(): Promise<void> {
   const ctx: AppContext = { cosmos, router, reduced };
   if (import.meta.env.DEV) Object.assign(window, { __ctx: ctx });
 
-  // Reveal the cosmos from behind the boot screen.
   const bootEl = document.getElementById('boot');
-  if (bootEl) {
-    bootEl.classList.add('is-done');
-    window.setTimeout(() => bootEl.remove(), 1000);
-  }
+  if (bootEl) animate(bootEl, { opacity: 0, duration: reduced ? 1 : 800, ease: 'out(2)', onComplete: () => bootEl.remove() });
+
+  // Sheets grow out of the control that opened them.
+  document.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest('[data-morph]');
+    if (t) rememberOrigin(t);
+  }, true);
 
   await requireUnlock(ctx);
-
-  mountShell(router, ctx);
   router.start(ctx);
   initPWA();
 
@@ -90,9 +84,7 @@ async function boot(): Promise<void> {
     }
   });
 
-  // Anime.js engine: keep running in the background tab only as long as it is visible.
   engine.pauseOnDocumentHidden = true;
-  animate('#app', { opacity: { from: 0, to: 1 }, duration: 900, ease: 'out(2)' });
 }
 
 void boot();

@@ -23,16 +23,16 @@ export interface Milestone {
 }
 
 export const MILESTONES: Milestone[] = [
-  { id: 'spark', name: 'Spark', at: HOUR, title: 'The first light', blurb: 'One whole hour of choosing differently. Every galaxy begins with a single spark.', hue: '#ffd9a0' },
-  { id: 'meteor', name: 'Meteor', at: DAY, title: 'A streak across the sky', blurb: 'A full day. The pull was there, and you moved through it anyway.', hue: '#ffb37a' },
-  { id: 'comet', name: 'Comet', at: 3 * DAY, title: 'Holding your course', blurb: 'Three days — the hardest stretch for most. Your tail is starting to glow.', hue: '#9fd8ff' },
-  { id: 'moon', name: 'Moon', at: 7 * DAY, title: 'A full cycle', blurb: 'One week. A whole lunar phase of keeping your word to yourself.', hue: '#e8e6ff' },
-  { id: 'planet', name: 'Planet', at: 14 * DAY, title: 'A world of your own', blurb: 'Two weeks. New habits now have their own gravity.', hue: '#7fe3d0' },
-  { id: 'star', name: 'Star', at: 30 * DAY, title: 'You make your own light', blurb: 'Thirty days. You are no longer reflecting light — you are producing it.', hue: '#fff1c4' },
-  { id: 'nebula', name: 'Nebula', at: 60 * DAY, title: 'A nursery of new selves', blurb: 'Sixty days. Whole new parts of you are being born here.', hue: '#ff8fc2' },
-  { id: 'galaxy', name: 'Galaxy', at: 90 * DAY, title: 'Milkomeda', blurb: 'Ninety days. The old self and the new have merged into something greater.', hue: '#c9b8ff' },
-  { id: 'quasar', name: 'Quasar', at: 180 * DAY, title: 'Brightest in the universe', blurb: 'Half a year. Your light now reaches people you will never meet.', hue: '#9ad1ff' },
-  { id: 'universe', name: 'Universe', at: 365 * DAY, title: 'Infinite', blurb: 'One year. You did not just break a habit — you became a universe.', hue: '#ffe7b3' },
+  { id: 'spark', name: 'Spark', at: HOUR, title: '1 hour', blurb: 'First hour done.', hue: '#ffffff' },
+  { id: 'meteor', name: 'Meteor', at: DAY, title: '1 day', blurb: 'A full day without it.', hue: '#ffffff' },
+  { id: 'comet', name: 'Comet', at: 3 * DAY, title: '3 days', blurb: 'The hardest stretch is behind you.', hue: '#ffffff' },
+  { id: 'moon', name: 'Moon', at: 7 * DAY, title: '1 week', blurb: 'One week clean.', hue: '#ffffff' },
+  { id: 'planet', name: 'Planet', at: 14 * DAY, title: '2 weeks', blurb: 'The habit is losing its grip.', hue: '#ffffff' },
+  { id: 'star', name: 'Star', at: 30 * DAY, title: '30 days', blurb: 'One month. This is who you are now.', hue: '#ffffff' },
+  { id: 'nebula', name: 'Nebula', at: 60 * DAY, title: '60 days', blurb: 'Two months strong.', hue: '#ffffff' },
+  { id: 'galaxy', name: 'Galaxy', at: 90 * DAY, title: '90 days', blurb: 'Milkomeda is complete. So is your reset.', hue: '#ffffff' },
+  { id: 'quasar', name: 'Quasar', at: 180 * DAY, title: '6 months', blurb: 'Half a year free.', hue: '#ffffff' },
+  { id: 'universe', name: 'Universe', at: 365 * DAY, title: '1 year', blurb: 'One full year.', hue: '#ffffff' },
 ];
 
 export const JOURNEY_DAYS = 90;
@@ -50,12 +50,12 @@ const ANCHORS: Array<[day: number, sim: number]> = [
 ];
 
 export const JOURNEY_BEATS = [
-  { day: 0, label: 'The vow', text: 'Two galaxies begin to fall toward each other.' },
-  { day: 17, label: 'First contact', text: 'They touch. Old orbits are torn apart.' },
-  { day: 37, label: 'The long swing', text: 'Flung apart, trailing streams of stars.' },
-  { day: 67, label: 'Return', text: 'Gravity pulls them back together.' },
-  { day: 75, label: 'Merger', text: 'Two become one.' },
-  { day: 90, label: 'Milkomeda', text: 'A new galaxy is born — your new self.' },
+  { day: 0, label: 'Start', text: 'The galaxies are on their way.' },
+  { day: 17, label: 'First contact', text: 'They pass through each other.' },
+  { day: 37, label: 'Furthest apart', text: 'Thrown apart, trailing stars.' },
+  { day: 67, label: 'Return', text: 'Gravity pulls them back.' },
+  { day: 75, label: 'Merger', text: 'The cores become one.' },
+  { day: 90, label: 'Milkomeda', text: 'A new galaxy has formed.' },
 ];
 
 export function simTimeForDays(days: number): number {
@@ -87,6 +87,12 @@ export function parts(ms: number): Parts {
     minutes: Math.floor((s % 3600) / 60),
     seconds: s % 60,
   };
+}
+
+export function shortAt(ms: number): string {
+  if (ms >= 365 * DAY) return `${Math.round(ms / (365 * DAY))}y`;
+  if (ms >= DAY) return `${Math.round(ms / DAY)}d`;
+  return `${Math.round(ms / HOUR)}h`;
 }
 
 export function humanDuration(ms: number): string {

@@ -8,7 +8,7 @@
 
 import { createAnimatable, createTimer, type AnimatableObject, type Timer } from 'animejs';
 import { GalaxySim } from './simulation';
-import { GalaxyRenderer } from './renderer';
+import { GalaxyRenderer, type GlassFrame } from './renderer';
 import { ATTRIB_STRIDE, PT } from './model';
 import { Rng, TAU, clamp, mat4, smoothstep, type Mat4, type Vec3 } from './math';
 
@@ -118,6 +118,8 @@ export interface FrameInfo {
 export interface SceneOptions {
   quality?: Quality;
   onFrame?: (info: FrameInfo) => void;
+  /** Supplies liquid-glass panes for each frame (cssWidth, cssHeight, canvasPxPerCssPx). */
+  glass?: (cssW: number, cssH: number, k: number) => GlassFrame;
 }
 
 export class GalaxyScene {
@@ -131,6 +133,7 @@ export class GalaxyScene {
   /** User drag offsets (azimuth/elevation), animated with springs on release. */
   readonly user = { azimuth: 0, elevation: 0, zoom: 1 };
   onFrame?: (info: FrameInfo) => void;
+  glass?: (cssW: number, cssH: number, k: number) => GlassFrame;
 
   private readonly tier: Tier;
   private readonly timer: Timer;
@@ -169,6 +172,7 @@ export class GalaxyScene {
     this.quality = quality;
     this.tier = TIERS[quality];
     this.onFrame = opts.onFrame;
+    this.glass = opts.glass;
     this.sim = new GalaxySim({ scale: this.tier.scale, maxStepsPerFrame: this.tier.steps });
     const set = this.sim.set;
     renderer.setParticles(set.attribs, set.count, {
@@ -190,7 +194,10 @@ export class GalaxyScene {
 
     canvas.addEventListener('webglcontextlost', this.onContextLost);
 
+    // Highest priority ticks last: the frame is drawn after every DOM animation
+    // of this tick has run, so liquid glass lands exactly on its element.
     this.timer = createTimer({
+      priority: 1000,
       onUpdate: (t) => this.frame(t.deltaTime),
     });
   }
@@ -332,6 +339,8 @@ export class GalaxyScene {
       skyFade: d.skyFade,
       youth: d.youth,
       dust: d.dust,
+      glass: this.glass?.(this.cssW, this.cssH, this.canvas.width / this.cssW),
+      pixelRatio: this.canvas.width / this.cssW,
     });
 
     f.simTime = this.sim.time;
