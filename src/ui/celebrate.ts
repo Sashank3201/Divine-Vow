@@ -34,24 +34,27 @@ export function burst(x: number, y: number, count = 28, spread = 180): void {
   });
 }
 
-export function celebrate(m: Milestone, ctx: AppContext): void {
-  const modal = openModal(
-    `<div class="stack celebrate" style="--gap:6px;text-align:center;align-items:center">
-      <svg class="celebrate__star" viewBox="-50 -50 100 100" aria-hidden="true"><path d="M0 -40 C 4 -11, 11 -4, 40 0 C 11 4, 4 11, 0 40 C -4 11, -11 4, -40 0 C -11 -4, -4 -11, 0 -40 Z" fill="#fff"/></svg>
-      <p class="t-label">Milestone</p>
-      <h2 class="t-large">${esc(m.name)}</h2>
-      <p class="t-headline t-accent">${esc(m.title)}</p>
-      <p class="t-sub">${esc(m.blurb)}</p>
-      <button class="btn btn--accent btn--block" type="button" data-close style="margin-top:18px">Continue</button>
-    </div>`,
-    { label: `Milestone: ${m.name}` },
-  );
-  const star = modal.body.querySelector<SVGElement>('.celebrate__star')!;
-  animate(star, { scale: { from: 0, to: 1 }, rotate: { from: -120, to: 0 }, duration: 900, ease: 'outElastic(1, .6)' });
-  vibrate([30, 60, 30]);
-  ctx.cosmos.flash(0.5);
-  window.setTimeout(() => {
-    const r = star.getBoundingClientRect();
-    burst(r.left + r.width / 2, r.top + r.height / 2, 40, 200);
-  }, 300);
+/** The milestone sheet; resolves once it is closed. */
+export function celebrate(m: Milestone, ctx: AppContext): Promise<void> {
+  return new Promise((resolve) => {
+    const modal = openModal(
+      `<div class="stack celebrate" style="--gap:6px;text-align:center;align-items:center">
+        <svg class="celebrate__star" viewBox="-50 -50 100 100" aria-hidden="true"><path d="M0 -40 C 4 -11, 11 -4, 40 0 C 11 4, 4 11, 0 40 C -4 11, -11 4, -40 0 C -11 -4, -4 -11, 0 -40 Z" fill="#fff"/></svg>
+        <p class="t-label">Milestone</p>
+        <h2 class="t-large">${esc(m.name)}</h2>
+        <p class="t-headline t-accent">${esc(m.title)}</p>
+        <p class="t-sub">${esc(m.blurb)}</p>
+        <button class="btn btn--accent btn--block" type="button" data-close style="margin-top:18px">Continue</button>
+      </div>`,
+      { label: `Milestone: ${m.name}`, onClose: resolve },
+    );
+    const star = modal.body.querySelector<SVGElement>('.celebrate__star')!;
+    animate(star, { scale: { from: 0, to: 1 }, rotate: { from: -120, to: 0 }, duration: 900, ease: 'outElastic(1, .6)' });
+    vibrate([30, 60, 30]);
+    ctx.cosmos.flash(0.5);
+    window.setTimeout(() => {
+      const r = star.getBoundingClientRect();
+      burst(r.left + r.width / 2, r.top + r.height / 2, 40, 200);
+    }, 300);
+  });
 }

@@ -9,7 +9,6 @@ import { Router, type Route } from './app/router';
 import { initPWA } from './app/pwa';
 import type { AppContext } from './app/types';
 import { store } from './core/store';
-import { syncMilestones } from './core/journey';
 import { welcomeView } from './views/welcome';
 import { vowView } from './views/vow';
 import { homeView } from './views/home';
@@ -18,7 +17,6 @@ import { sosView } from './views/sos';
 import { journalView } from './views/journal';
 import { settingsView } from './views/settings';
 import { requireUnlock } from './views/lock';
-import { celebrate } from './ui/celebrate';
 import { rememberOrigin } from './ui/morph';
 import type { Quality } from './galaxy/scene';
 
@@ -64,20 +62,10 @@ async function boot(): Promise<void> {
   router.start(ctx);
   initPWA();
 
-  // Celebrate milestones as they are crossed, even while the app is open.
-  const checkMilestones = () => {
-    const fresh = syncMilestones();
-    if (fresh.length) celebrate(fresh[fresh.length - 1]!, ctx);
-  };
-  window.setTimeout(checkMilestones, 1500);
-  window.setInterval(checkMilestones, 20_000);
-
+  // Milestones are celebrated at the night check-in, when a day is confirmed.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) cosmos.pause();
-    else {
-      cosmos.resume();
-      checkMilestones();
-    }
+    else cosmos.resume();
   });
 
   engine.pauseOnDocumentHidden = true;

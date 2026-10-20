@@ -2,11 +2,29 @@
 
 **Quit the habit that’s holding you back. One day at a time.**
 
-A private streak tracker and urge toolkit. Behind every screen runs a live
+A private habit tracker and urge toolkit. Behind every screen runs a live
 gravitational simulation of the Milky Way and Andromeda colliding, and the UI
 floats over it as liquid glass rendered on the GPU. The app never asks what
 the habit is. You give it a name only you understand, and everything stays
 on your device.
+
+## How the system works
+
+- **Habits.** One or more *quit* habits (one slip and it's back to Day 0)
+  and *good* habits to build (never miss twice: one missed day is forgiven,
+  two in a row reset the streak).
+- **Main habit.** One quit habit drives the big day counter, the milestones
+  and the galaxy. The others sit underneath with their own streaks.
+- **Night check-in.** Streaks count days, and a day only counts once you
+  confirm it. From 6 pm (or your reminder time, if earlier) one screen lists
+  every habit: quit habits start as clean, so a clean day is one tap. The
+  galaxy only moves forward when you confirm. Days you forgot are asked
+  about the next time you open the app.
+- **Urges.** The urge screen opens on what you'd lose (your streak, your
+  best, and the galaxy rewinding to Day 0), then a message from past you,
+  then the tools.
+- **Reminder.** A daily Google Calendar event (or an .ics file) that opens
+  the app. No account and no server.
 
 Built with **TypeScript**, **Anime.js 4.5** and raw **WebGL2**. Installable
 as a **PWA** that works fully offline.
@@ -25,13 +43,14 @@ The copy is short and direct.
 | | |
 |---|---|
 | **Welcome** | The collision plays like a film. On top: the name, cut from liquid glass so the galaxy bends through the letters, one line and two glass buttons. Drag to orbit. |
-| **Take the vow** | Five steps: name it privately, list your reasons, write the vow, pick a start time, then press and hold to seal it. |
-| **Home** | The galaxy, exactly where your streak has brought it (day 17 first contact, day 75 merger, day 90 Milkomeda), a day counter and two buttons: *I have an urge* and *Open dashboard*. |
-| **Dashboard** | Everything in one sheet: streak and next milestone, daily check-in, your reasons, galaxy journey, ten milestones, stats, when urges hit (by hour and weekday, top triggers) and recent journal entries. |
-| **Urge** | Strength slider and timer, plus six tools: box / 4-7-8 / 5-5 breathing, a 10-minute ride-it-out timer, *Star catcher* (60-second game), quick actions, 5-4-3-2-1 grounding and your reasons. Ends with an honest check-in. |
-| **Start again** | A slip resets the streak, not your history. Best streak, journal and stats are kept. |
+| **Take the vow** | Five steps: name your main habit privately, list your reasons, write the vow, say since when you've been clean, then press and hold to seal it. |
+| **Home** | The galaxy, exactly where your main streak has brought it (day 17 first contact, day 75 merger, day 90 Milkomeda), the day counter, your other habits, and two buttons: *I have an urge* and *Check in* (from the evening) or *Open dashboard*. |
+| **Check-in** | One screen with every habit and an optional mood. Missed days come first, oldest first. Confirming moves the galaxy, celebrates milestones and sometimes asks for a message to future you. |
+| **Dashboard** | Everything in one sheet: main streak and next milestone, tonight's check-in, every habit with its last seven days, messages to future you, your reasons, galaxy journey, nine milestones, stats, when urges hit (by hour and weekday, top triggers) and recent journal entries. |
+| **Urge** | What you'd lose, a message from past you, a strength slider and timer, plus six tools: box / 4-7-8 / 5-5 breathing, a 10-minute ride-it-out timer, *Star catcher* (60-second game), quick actions, 5-4-3-2-1 grounding and your reasons. Ends with an honest check-in. |
+| **Start again** | A slip resets that habit's streak, not your history. Best streaks, journal and stats are kept. |
 | **Journal** | Notes, urges and restarts in one timeline, grouped by day, with moods and tags. |
-| **Settings** | Edit the vow, PIN lock, haptics, motion, galaxy quality, install, export / restore / erase. |
+| **Settings** | Edit the vow, check-in reminder (Google Calendar or .ics), PIN lock, haptics, motion, galaxy quality, install, export / restore / erase. |
 | **Lock** | Optional 4-digit PIN (SHA-256). The keypad is ten glass drops over the galaxy. |
 
 ## Getting started
@@ -121,10 +140,10 @@ function-based values (spark bursts) and custom easing functions.
 src/
   galaxy/     math, orbit, model, simulation, shaders, renderer, scene
   hero/       cinematic timeline
-  app/        cosmos controller, liquid-glass layer, router, PWA
-  core/       store (localStorage), journey (streaks, milestones), content
+  app/        cosmos controller, liquid-glass layer, router, PWA, calendar reminder
+  core/       store (localStorage, v1 → v2 migration), journey (habits, streaks, check-ins, milestones), content
   views/      welcome, vow, home, dashboard, sos (+ tools, game), journal, settings, lock, sheet
-  ui/         dom helpers, icons, overlays, morphs, celebrations, relapse flow
+  ui/         dom helpers, icons, overlays, morphs, celebrations, check-in, messages, relapse flow
   styles/     base (tokens, type), ui (glass, sheets, controls), screens
 scripts/      icon.svg + generate-icons.mjs
 ```

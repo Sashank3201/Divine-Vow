@@ -95,9 +95,9 @@ export function welcomeView(ctx: AppContext): View {
       `<div class="stack" style="--gap:18px">
         <h3 class="t-title">How it works</h3>
         <div class="how">
-          <div class="how__item"><span class="how__num">1</span><div><p class="t-headline">Make a vow</p><p class="t-sub">Name the habit privately. Write why you’re quitting.</p></div></div>
-          <div class="how__item"><span class="how__num">2</span><div><p class="t-headline">Track every day</p><p class="t-sub">Your streak, milestones, and a galaxy that moves with you. Day 90 completes the merger.</p></div></div>
-          <div class="how__item"><span class="how__num">3</span><div><p class="t-headline">Get through urges</p><p class="t-sub">Breathing, a 10-minute timer, a quick game and more.</p></div></div>
+          <div class="how__item"><span class="how__num">1</span><div><p class="t-headline">Make a vow</p><p class="t-sub">Name the habit privately and write why you’re quitting. Add good habits to build too.</p></div></div>
+          <div class="how__item"><span class="how__num">2</span><div><p class="t-headline">Check in every night</p><p class="t-sub">One tap. The galaxy only moves forward when you confirm the day. Day 90 completes the merger.</p></div></div>
+          <div class="how__item"><span class="how__num">3</span><div><p class="t-headline">Get through urges</p><p class="t-sub">See what you’d lose, read a message from past you, then breathe, wait it out or play.</p></div></div>
           <div class="how__item"><span class="how__num">4</span><div><p class="t-headline">Stay private</p><p class="t-sub">No account. Nothing leaves this device.</p></div></div>
         </div>
         <a class="btn btn--accent btn--block" href="${hasVow ? '#/home' : '#/vow'}" data-close>${hasVow ? 'Continue' : 'Take the vow'}</a>

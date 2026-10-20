@@ -1,14 +1,19 @@
-/** Urge — the emergency toolkit, in one sheet. */
+/**
+ * Urge — in one sheet: first what you would lose (the galaxy rewinds to
+ * show it), then a message from past you, then the emergency toolkit.
+ */
 
-import { animate, createTimer, stagger, type Timer } from 'animejs';
+import { animate, createTimer, stagger, utils, type Timer } from 'animejs';
 import type { AppContext, View } from '../app/types';
-import { store, uid } from '../core/store';
+import { store, uid, type Habit } from '../core/store';
+import { dayWord, habitStreak, mainDays, mainHabit, orderedHabits, simTimeForDays } from '../core/journey';
 import { TRIGGERS } from '../core/content';
 import { icons } from '../ui/icons';
 import { $, $$, el, esc, vibrate } from '../ui/dom';
 import { openModal, toast } from '../ui/overlay';
 import { burst } from '../ui/celebrate';
 import { relapseFlow } from '../ui/relapse';
+import { writeMessage } from '../ui/messages';
 import { breathePanel, groundPanel, movePanel, surfPanel, whyPanel, type Panel } from './sos/tools';
 import { starCatcher } from './sos/game';
 import { createSheet } from './sheet';
@@ -24,6 +29,9 @@ const TOOLS = [
 
 type ToolId = (typeof TOOLS)[number]['id'];
 
+/** How long the galaxy shows Day 0 before it comes back. */
+const REWIND_MS = 3600;
+
 export function sosView(ctx: AppContext, params: URLSearchParams): View {
   const started = Date.now();
   const used = new Set<ToolId>();
@@ -31,6 +39,11 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
   let peak = 6;
   let panel: Panel | null = null;
   let timer: Timer | null = null;
+  let rewindTimer = 0;
+  const quit = orderedHabits().filter((h) => h.kind === 'quit');
+  let habit: Habit | null = quit.find((h) => h.id === params.get('habit')) ?? quit[0] ?? null;
+  const messages = utils.shuffle([...store.get().messages]);
+  let msgIndex = 0;
 
   const grid = `<div class="tools" data-tools>${TOOLS.map(
     (t) => `<button class="tool" type="button" data-tool="${t.id}">
@@ -40,11 +53,50 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
     </button>`,
   ).join('')}</div>`;
 
+  const stakesMarkup = () => {
+    if (!habit) return '';
+    const days = habitStreak(habit);
+    const best = Math.max(habit.best, days);
+    const isMain = habit.id === mainHabit()?.id;
+    return `
+      ${
+        quit.length > 1
+          ? `<div class="chips stakes__pick">${quit
+              .map((h) => `<button class="chip ${h === habit ? 'is-on' : ''}" type="button" data-habit="${h.id}">${esc(h.name)}</button>`)
+              .join('')}</div>`
+          : `<p class="t-label">${esc(habit.name)}</p>`
+      }
+      <div class="stakes__num t-num"><span>${days}</span><small>${dayWord(days)} clean</small></div>
+      <p class="t-headline">${
+        days > 1 ? `Give in now and all ${days} days are gone. Back to Day 0.` : days === 1 ? 'Give in now and that day is gone. Back to Day 0.' : 'Day 0. Don’t give it today.'
+      }</p>
+      <p class="t-sub">${best > days ? `Your best is ${best} ${dayWord(best)}. ` : days > 0 ? 'This is your best streak yet. ' : ''}${
+        isMain && days > 0 && !ctx.reduced ? '<span data-rewind>Look at the galaxy: that’s Day 0.</span>' : ''
+      }</p>`;
+  };
+
+  const messageMarkup = () => {
+    const m = messages[msgIndex];
+    if (m) {
+      const when = new Date(m.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return `<div class="group__title"><span>From you · ${esc(when)}</span>${
+        messages.length > 1 ? '<button class="btn btn--plain" type="button" data-another>Another</button>' : ''
+      }</div>
+      <p class="pastme__text">“${esc(m.text)}”</p>`;
+    }
+    const reasons = store.get().vow?.reasons ?? [];
+    return `<div class="group__title"><span>From you</span></div>
+      <p class="t-sub">No message yet. Once this passes, write one for next time. For now, your reasons:</p>
+      <ul class="reasons">${reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`;
+  };
+
   const sheet = createSheet(ctx, {
     title: 'Urge',
     sub: 'Most urges fade within 15–30 minutes.',
     size: 'narrow',
     body: `
+      ${habit ? `<section class="group stakes" data-stakes>${stakesMarkup()}</section>` : ''}
+      <section class="group pastme" data-pastme>${messageMarkup()}</section>
       <div class="group sos__meter">
         <div class="group__title"><span>Riding it out</span><span class="t-num" data-elapsed>0:00</span></div>
         <div class="inline" style="--gap:14px">
@@ -61,6 +113,18 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
   const range = $<HTMLInputElement>('[data-intensity]', sheet.body)!;
   const label = $('[data-intensity-label]', sheet.body)!;
   const elapsed = $('[data-elapsed]', sheet.body)!;
+
+  /** Shows the galaxy at Day 0 for a moment, then brings it back. */
+  const rewind = () => {
+    window.clearTimeout(rewindTimer);
+    if (ctx.reduced || !habit || habit.id !== mainHabit()?.id || habitStreak(habit) === 0) return;
+    ctx.cosmos.journey(simTimeForDays(0), 'sos');
+    rewindTimer = window.setTimeout(() => {
+      ctx.cosmos.journey(simTimeForDays(mainDays()), 'sos');
+      const note = $('[data-rewind]', sheet.body);
+      if (note) note.textContent = `And that’s Day ${mainDays()}. Keep it.`;
+    }, REWIND_MS);
+  };
 
   range.addEventListener('input', () => {
     intensity = Number(range.value);
@@ -118,6 +182,7 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
       s.urges.push({
         id: uid(),
         at: started,
+        habitId: habit?.id,
         intensity: peak,
         outcome,
         tools: [...used],
@@ -159,18 +224,26 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
       burst(r.left + r.width / 2, r.top + r.height / 2, 40, 200);
       ctx.cosmos.flash(0.6);
       vibrate([30, 40, 80]);
-      void m.close();
       const won = store.get().urges.filter((u) => u.outcome === 'won').length;
       toast(won > 1 ? `${won} urges beaten.` : 'First urge beaten.');
-      window.setTimeout(() => ctx.router.go(store.get().vow ? '/home' : '/vow'), 700);
+      void m
+        .close()
+        .then(() => (store.get().vow ? writeMessage('won') : undefined))
+        .then(() => ctx.router.go(store.get().vow ? '/home' : '/vow'));
     });
     m.body.querySelector('[data-slipped]')!.addEventListener('click', () => {
       log('slipped', [...picked].join(', '));
       void m.close().then(() => {
-        if (store.get().vow) relapseFlow(ctx, () => ctx.router.go('/home'));
+        if (store.get().vow) relapseFlow(ctx, { habitId: habit?.id, onDone: () => ctx.router.go('/home') });
         else ctx.router.go('/vow');
       });
     });
+  };
+
+  const swap = async (node: HTMLElement, markup: string) => {
+    if (!ctx.reduced) await animate(node, { opacity: 0, duration: 150, ease: 'in(2)' }).then();
+    sheet.resize(() => (node.innerHTML = markup));
+    if (!ctx.reduced) animate(node, { opacity: 1, duration: 300, ease: 'out(2)' });
   };
 
   sheet.root.addEventListener('click', (e) => {
@@ -179,6 +252,13 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
     if (b.dataset.tool) void openTool(b.dataset.tool as ToolId);
     else if (b.hasAttribute('data-back')) void backToTools();
     else if (b.hasAttribute('data-passed')) outcome();
+    else if (b.hasAttribute('data-another')) {
+      msgIndex = (msgIndex + 1) % messages.length;
+      void swap($('[data-pastme]', sheet.body)!, messageMarkup());
+    } else if (b.dataset.habit) {
+      habit = quit.find((h) => h.id === b.dataset.habit) ?? habit;
+      void swap($('[data-stakes]', sheet.body)!, stakesMarkup()).then(rewind);
+    }
   });
 
   return {
@@ -186,6 +266,16 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
     preset: 'sos',
     enter() {
       sheet.enter();
+      if (!ctx.reduced) {
+        animate($$('[data-stakes] > *, [data-pastme]', sheet.body), {
+          opacity: { from: 0, to: 1 },
+          y: { from: 12, to: 0 },
+          delay: stagger(120, { start: 350 }),
+          duration: 600,
+          ease: 'out(3)',
+        });
+      }
+      rewind();
       timer = createTimer({
         frameRate: 4,
         onUpdate: () => {
@@ -198,8 +288,10 @@ export function sosView(ctx: AppContext, params: URLSearchParams): View {
     },
     leave: (next) => sheet.leave(next),
     destroy() {
+      window.clearTimeout(rewindTimer);
       timer?.cancel();
       panel?.destroy();
     },
   };
 }
+
