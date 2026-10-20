@@ -3,7 +3,7 @@
 import { animate, stagger } from 'animejs';
 import type { AppContext, View } from '../app/types';
 import { store, uid, type Mood } from '../core/store';
-import { humanDuration } from '../core/journey';
+import { dayWord } from '../core/journey';
 import { JOURNAL_PROMPTS, MOODS, dailyPick } from '../core/content';
 import { icons } from '../ui/icons';
 import { $, $$, esc, relativeDay, timeOfDay } from '../ui/dom';
@@ -83,15 +83,16 @@ export function journalView(ctx: AppContext): View {
       }
     }
     if (filter === 'all' || filter === 'restarts') {
+      const names = new Map(s.habits.map((h) => [h.id, h.name]));
       for (const r of s.relapses) {
         out.push({
           at: r.at,
           html: entry({
             icon: icons.replay,
             tone: 'muted',
-            title: 'New streak',
+            title: s.habits.length > 1 && names.has(r.habitId) ? `New streak · ${esc(names.get(r.habitId))}` : 'New streak',
             text: r.note ? esc(r.note) : undefined,
-            meta: [timeOfDay(r.at), `After ${humanDuration(r.streakMs)}`, r.trigger].filter(Boolean).map(esc).join(' · '),
+            meta: [timeOfDay(r.at), `After ${r.days} ${dayWord(r.days)}`, r.trigger].filter(Boolean).map(esc).join(' · '),
           }),
         });
       }

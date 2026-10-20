@@ -318,7 +318,11 @@ vec3 safe(vec3 c) { return mix(clamp(c, 0.0, 65000.0), vec3(0.0), isnan(c)); }
 vec3 grade(vec3 hdr) {
   vec3 c = aces(hdr * uExposure);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(l), c, uSaturation);
+  // Saturation above 1 pushes a channel of a dark, coloured pixel below zero
+  // (common on phones without float render targets, where dim channels round
+  // to 0). pow() of a negative base is undefined: phones return NaN, which the
+  // glass shows as red, yellow and blue blotches. Clamp before the gamma.
+  c = max(mix(vec3(l), c, uSaturation), 0.0);
   return pow(c, vec3(1.0 / 2.2));
 }
 

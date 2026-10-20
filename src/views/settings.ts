@@ -7,6 +7,8 @@ import { $, $$, esc } from '../ui/dom';
 import { confirmDialog, openModal, toast } from '../ui/overlay';
 import { relapseFlow } from '../ui/relapse';
 import { canInstall, isIOS, isStandalone, promptInstall } from '../app/pwa';
+import { googleCalendarUrl, icsFile } from '../app/reminder';
+import { checkinOpensLabel, mainHabit } from '../core/journey';
 import { createSheet } from './sheet';
 import { pinPad } from './lock';
 
@@ -43,12 +45,22 @@ export function settingsView(ctx: AppContext): View {
         ${
           s.vow
             ? navRow('data-edit-vow', 'Edit vow', 'Name, reasons and words. Your streak is kept.') +
-              navRow('data-restart', 'Start again', 'Resets the streak. History is kept.')
+              `<a class="row row--button" href="#/dashboard"><span class="row__body"><span class="row__title">Habits</span><span class="row__sub">Add, rename or change your main habit in the dashboard.</span></span><span class="row__chev">${icons.chevron}</span></a>` +
+              navRow('data-restart', 'Start again', 'Back to Day 0 after a slip. History is kept.')
             : `<a class="row row--button" href="#/vow"><span class="row__body"><span class="row__title">Take the vow</span><span class="row__sub">About 2 minutes.</span></span><span class="row__chev">${icons.chevron}</span></a>`
         }
         <label class="row"><span class="row__body"><span class="row__title">Name</span></span>
           <input class="input input--inline" data-name maxlength="30" value="${esc(st.name)}" placeholder="Optional" autocomplete="off" /></label>
       </div>
+
+      <p class="settings__label">Reminder</p>
+      <div class="group group--flush">
+        <label class="row"><span class="row__body"><span class="row__title">Check-in time</span><span class="row__sub">Check-in opens at ${esc(checkinOpensLabel())}.</span></span>
+          <input class="input input--inline input--time" type="time" data-reminder value="${esc(st.reminder)}" /></label>
+        ${navRow('data-gcal', 'Add to Google Calendar', 'A daily event that opens the app. Tap Save.')}
+        ${navRow('data-ics', 'Download calendar file', 'For other calendar apps.')}
+      </div>
+      <p class="settings__note">Your calendar does the reminding. The event never names your habit.</p>
 
       <p class="settings__label">Privacy</p>
       <div class="group group--flush">
@@ -129,7 +141,7 @@ export function settingsView(ctx: AppContext): View {
     const m = openModal(
       `<div class="stack" style="--gap:14px">
         <h3 class="t-title">Edit vow</h3>
-        <label class="field"><span class="t-label">Name for it</span><input class="input" data-codename maxlength="40" value="${esc(v.codename)}" /></label>
+        <label class="field"><span class="t-label">Name for your main habit</span><input class="input" data-codename maxlength="40" value="${esc(mainHabit()?.name ?? '')}" /></label>
         <label class="field"><span class="t-label">Reasons, one per line</span><textarea class="textarea" data-reasons rows="4">${esc(v.reasons.join('\n'))}</textarea></label>
         <label class="field"><span class="t-label">Your vow</span><textarea class="textarea" data-vowtext rows="3">${esc(v.vowText)}</textarea></label>
         <label class="field"><span class="t-label">Signature</span><input class="input" data-signature maxlength="40" value="${esc(v.signature)}" /></label>
@@ -145,7 +157,8 @@ export function settingsView(ctx: AppContext): View {
         .filter(Boolean);
       store.update((s) => {
         if (!s.vow) return;
-        s.vow.codename = get('[data-codename]') || s.vow.codename;
+        const main = s.habits.find((h) => h.id === s.mainId);
+        if (main) main.name = get('[data-codename]') || main.name;
         s.vow.reasons = reasons.length ? reasons : s.vow.reasons;
         s.vow.vowText = get('[data-vowtext]') || s.vow.vowText;
         s.vow.signature = get('[data-signature]');
@@ -166,6 +179,19 @@ export function settingsView(ctx: AppContext): View {
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 2000);
     toast('Backup downloaded.', { icon: icons.download });
+  };
+
+  const downloadIcs = () => {
+    const blob = new Blob([icsFile(store.get().settings.reminder)], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'divine-vow-check-in.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('Open the file to add it to your calendar.', { icon: icons.calendar });
   };
 
   const install = async () => {
@@ -220,7 +246,9 @@ export function settingsView(ctx: AppContext): View {
       return;
     }
     if (b.hasAttribute('data-edit-vow')) editVow();
-    else if (b.hasAttribute('data-restart')) relapseFlow(ctx, render);
+    else if (b.hasAttribute('data-restart')) relapseFlow(ctx, { onDone: render });
+    else if (b.hasAttribute('data-gcal')) window.open(googleCalendarUrl(store.get().settings.reminder), '_blank', 'noopener');
+    else if (b.hasAttribute('data-ics')) downloadIcs();
     else if (b.hasAttribute('data-export')) exportData();
     else if (b.hasAttribute('data-install')) void install();
     else if (b.hasAttribute('data-wipe')) {
@@ -240,6 +268,15 @@ export function settingsView(ctx: AppContext): View {
 
   sheet.body.addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
+    if (input.matches('[data-reminder]')) {
+      if (!/^\d{2}:\d{2}$/.test(input.value)) return;
+      store.update((s) => {
+        s.settings.reminder = input.value;
+      });
+      render();
+      toast('Saved. Add it to your calendar again to move the event.', { duration: 4200 });
+      return;
+    }
     if (!input.matches('[data-import]') || !input.files?.[0]) return;
     try {
       const text = await input.files[0].text();

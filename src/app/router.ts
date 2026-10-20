@@ -7,7 +7,7 @@
 import { animate, stagger } from 'animejs';
 import type { AppContext, View, ViewFactory } from './types';
 import { store } from '../core/store';
-import { simTimeForDays, streakMs, DAY } from '../core/journey';
+import { mainDays, simTimeForDays } from '../core/journey';
 import { $$ } from '../ui/dom';
 
 export interface Route {
@@ -119,7 +119,7 @@ export class Router {
 
     const preset = view.preset ?? 'calm';
     if (preset !== 'hero' && preset !== 'none') {
-      const target = preset === 'vow' ? 0.4 : simTimeForDays(streakMs() / DAY);
+      const target = preset === 'vow' ? 0.4 : simTimeForDays(mainDays());
       ctx.cosmos.journey(target, preset, { shiftY: view.shiftY ?? 0 });
     }
 

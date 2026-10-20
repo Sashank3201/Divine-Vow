@@ -2,7 +2,7 @@
 
 import { animate, createTimeline, createTimer, stagger, utils, type Timeline, type Timer } from 'animejs';
 import { store } from '../../core/store';
-import { DAY, streakMs } from '../../core/journey';
+import { mainDays } from '../../core/journey';
 import { MOVES, SURF_PROMPTS } from '../../core/content';
 import { icons } from '../../ui/icons';
 import { $, $$, el, esc, vibrate } from '../../ui/dom';
@@ -285,7 +285,7 @@ export function groundPanel(reduced: boolean): Panel {
 export function whyPanel(): Panel {
   const s = store.get();
   const vow = s.vow;
-  const days = Math.floor(streakMs(s) / DAY);
+  const days = mainDays(s);
   const root = el(
     vow
       ? `<div class="stack" style="--gap:16px">

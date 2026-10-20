@@ -5,7 +5,8 @@
 
 import { animate, stagger, svg, utils, type JSAnimation } from 'animejs';
 import type { AppContext, View } from '../app/types';
-import { store } from '../core/store';
+import { store, dateKey } from '../core/store';
+import { mainHabit, makeHabit } from '../core/journey';
 import { icons } from '../ui/icons';
 import { $, $$, esc, vibrate } from '../ui/dom';
 import { toast } from '../ui/overlay';
@@ -28,8 +29,9 @@ const defaultVow = (c: string) => `I’m done with ${c || 'it'}. When the urge c
 
 export function vowView(ctx: AppContext): View {
   const existing = store.get().vow;
+  const main = mainHabit();
   const draft: Draft = {
-    codename: existing?.codename ?? '',
+    codename: main?.name ?? '',
     reasons: existing?.reasons.length ? [...existing.reasons] : [''],
     vowText: existing?.vowText ?? '',
     signature: existing?.signature ?? store.get().settings.name ?? '',
@@ -86,12 +88,17 @@ export function vowView(ctx: AppContext): View {
       <div class="vow__step">
         <h2 class="t-title">Your vow</h2>
         <textarea class="textarea" data-vowtext rows="4">${esc(draft.vowText || defaultVow(draft.codename))}</textarea>
-        <span class="t-label">Start</span>
+        ${
+          existing
+            ? ''
+            : `<span class="t-label">Clean since</span>
         <div class="segmented">
-          <button type="button" class="${draft.startMode === 'now' ? 'is-on' : ''}" data-start="now">Now</button>
+          <button type="button" class="${draft.startMode === 'now' ? 'is-on' : ''}" data-start="now">Today</button>
           <button type="button" class="${draft.startMode === 'past' ? 'is-on' : ''}" data-start="past">Earlier</button>
         </div>
-        <input class="input" type="datetime-local" data-startat value="${esc(draft.startAt)}" ${draft.startMode === 'past' ? '' : 'hidden'} max="${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}" />
+        <input class="input" type="date" data-startat value="${esc(draft.startAt)}" ${draft.startMode === 'past' ? '' : 'hidden'} max="${dateKey()}" />
+        <p class="t-foot">Each night you check in with one tap. A day counts once you confirm it.</p>`
+        }
       </div>`,
     () => `
       <div class="vow__step">
@@ -158,11 +165,10 @@ export function vowView(ctx: AppContext): View {
       toast('Add at least one reason.');
       return false;
     }
-    if (step === 3 && draft.startMode === 'past') {
-      const t = Date.parse(draft.startAt);
-      if (!draft.startAt || Number.isNaN(t) || t > Date.now()) {
+    if (step === 3 && !existing && draft.startMode === 'past') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.startAt) || draft.startAt >= dateKey()) {
         shake($('[data-startat]', stage)!);
-        toast('Pick a time in the past.');
+        toast('Pick a day before today.');
         return false;
       }
     }
@@ -184,17 +190,22 @@ export function vowView(ctx: AppContext): View {
   const seal = () => {
     read();
     const now = Date.now();
-    const startAt = draft.startMode === 'past' && draft.startAt ? Math.min(Date.parse(draft.startAt), now) : now;
+    const since = draft.startMode === 'past' && draft.startAt && draft.startAt < dateKey() ? draft.startAt : dateKey();
     store.update((s) => {
       s.vow = {
         createdAt: s.vow?.createdAt ?? now,
-        startAt: existing ? s.vow!.startAt : startAt,
-        codename: draft.codename,
         reasons: draft.reasons.map((r) => r.trim()).filter(Boolean),
         vowText: draft.vowText || defaultVow(draft.codename),
         signature: draft.signature,
       };
-      if (!existing) s.milestones = {};
+      const current = s.habits.find((h) => h.id === s.mainId);
+      if (current) current.name = draft.codename;
+      else {
+        const h = makeHabit('quit', draft.codename, since);
+        s.habits.unshift(h);
+        s.mainId = h.id;
+        s.milestones = {};
+      }
       if (draft.signature && !s.settings.name) s.settings.name = draft.signature.split(' ')[0] ?? '';
     });
     const r = $('[data-seal]', stage)!.getBoundingClientRect();
@@ -204,7 +215,7 @@ export function vowView(ctx: AppContext): View {
     $('[data-seal-hint]', stage)!.textContent = 'Sealed.';
     animate($('.seal__core', stage)!, { scale: [{ to: 1.12, duration: 160 }, { to: 1, duration: 500, ease: 'outElastic(1, .5)' }] });
     window.setTimeout(() => {
-      toast(existing ? 'Vow updated.' : 'Vow sealed. Day 0 starts now.');
+      toast(existing ? 'Vow updated.' : 'Vow sealed. Check in tonight.');
       ctx.router.go('/home');
     }, 1200);
   };
